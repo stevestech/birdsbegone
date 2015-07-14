@@ -11,8 +11,8 @@ Socket commands:
 
 setDirection(channel, direction)
 getDirection(channel)
-    channel = frontleft | frontright | rearleft | rearright
-    direction = neutral | breaking | forward | reverse
+    channel = front_left | front_right | rear_left | rear_right
+    direction = neutral | braking | forward | reverse
 
 setThrottle(channel, throttle)
 getThrottle(channel)
