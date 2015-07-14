@@ -35,10 +35,10 @@ class HubMotor:
         self.pin_throttle = pin_throttle
         self.pin_brake = pin_brake
 
-        GPIO.setup(pin_hall, GPIO.input)
-        GPIO.setup(pin_rev, GPIO.output)
-        GPIO.setup(pin_throttle, GPIO.output)
-        GPIO.setup(pin_brake, GPIO.output)
+        GPIO.setup(self.pin_hall, GPIO.input)
+        GPIO.setup(self.pin_rev, GPIO.output)
+        GPIO.setup(self.pin_throttle, GPIO.output)
+        GPIO.setup(self.pin_brake, GPIO.output)
 
         # PWM frequency 100Hz, 0% duty cycle
         self.throttle = GPIO.PWM(pin_throttle, 100)
@@ -52,21 +52,21 @@ class HubMotor:
 
         if state == states.neutral:
             self.setThrottle(0)
-            GPIO.output(pin_rev, 1)
-            GPIO.output(pin_brake, 1)
+            GPIO.output(self.pin_rev, 1)
+            GPIO.output(self.pin_brake, 1)
 
         elif state == states.braking:
             self.setThrottle(0)
-            GPIO.output(pin_rev, 1)
-            GPIO.output(pin_brake, 0)
+            GPIO.output(self.pin_rev, 1)
+            GPIO.output(self.pin_brake, 0)
 
         elif state == states.forward:
-            GPIO.output(pin_rev, 1)
-            GPIO.output(pin_brake, 1)
+            GPIO.output(self.pin_rev, 1)
+            GPIO.output(self.pin_brake, 1)
 
         elif state == states.reverse:
-            GPIO.output(pin_rev, 0)
-            GPIO.output(pin_brake, 1)
+            GPIO.output(self.pin_rev, 0)
+            GPIO.output(self.pin_brake, 1)
         
 
     def setThrottle(self, throttle):
