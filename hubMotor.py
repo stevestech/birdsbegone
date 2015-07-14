@@ -3,7 +3,7 @@
 # This class holds all the state methods and fields for one particular hub motor controller.
 
 import RPi.GPIO as GPIO
-import datetime 
+from datetime import datetime
  
 class HubMotor:
     # Class variables shared by all instances
@@ -21,28 +21,34 @@ class HubMotor:
                 'rear_left': 2,
                 'rear_right': 3}
 
-    def __init__(self, pin_hall, pin_rev, pin_throttle, pin_brake):
+    def __init__(self, pinHall, pinRev, pinThrottle, pinBrake):
         # Instance variables unique to each instance
 
         self.state = states.neutral
-        self.measuredSpeed = 0
-        self.lastHallRisingEdge = 
+        
+        self.timeOfLastHallRisingEdge = datetime.now()
+        self.hallRisingEdgeTimeDeltas = []
+        
         #self.measuredDirecton = directions.forward
         #self.measuredCurrent = 0
 
-        self.pin_hall = pin_hall
-        self.pin_rev = pin_rev
-        self.pin_throttle = pin_throttle
-        self.pin_brake = pin_brake
+        self.pinHall = pinHall
+        self.pinRev = pinRev
+        self.pinThrottle = pinThrottle
+        self.pinBrake = pinBrake
 
-        GPIO.setup(self.pin_hall, GPIO.input)
-        GPIO.setup(self.pin_rev, GPIO.output)
-        GPIO.setup(self.pin_throttle, GPIO.output)
-        GPIO.setup(self.pin_brake, GPIO.output)
+        GPIO.setup(self.pinHall, GPIO.input)
+        GPIO.setup(self.pinRev, GPIO.output)
+        GPIO.setup(self.pinThrottle, GPIO.output)
+        GPIO.setup(self.pinBrake, GPIO.output)
 
         # PWM frequency 100Hz, 0% duty cycle
-        self.throttle = GPIO.PWM(pin_throttle, 100)
+        self.throttle = GPIO.PWM(self.pinThrottle, 100)
         self.throttle.start(0)
+
+        GPIO.add_event_detect(self.pinHall,
+                              GPIO.RISING,
+                              callback=self.hallSensorRisingEdgeCallback)
 
         self.setState(states.neutral)
 
@@ -52,8 +58,8 @@ class HubMotor:
 
         if state == states.neutral:
             self.setThrottle(0)
-            GPIO.output(self.pin_rev, 1)
-            GPIO.output(self.pin_brake, 1)
+            GPIO.output(self.pinRev, 1)
+            GPIO.output(self.pinBrake, 1)
 
         elif state == states.braking:
             self.setThrottle(0)
@@ -72,7 +78,28 @@ class HubMotor:
     def setThrottle(self, throttle):
         self.throttle.ChangeDutyCycle(throttle)
 
-    def g
+    def hallSensorRisingEdgeCallback(self):
+        hallRisingEdgeTimeDeltas.append(datetime.now() - self.timeOfLastHallRisingEdge)
+        self.timeOfLastHallRisingEdge = datetime.now()
+
+        # Only keep 10 entries in the hallRisingEdgeTimeDeltas list, 0 through to 9
+        try:
+            self.hallRisingEdgeTimeDeltas.pop(10)
+
+        except IndexError:
+            pass
+        
+
+    def getMeasuredSpeed(self):
+        # Average the last 10 time deltas to get the measured speed
+        timeDeltaSum = 0
+        
+        for timeDelta in self.hallRisingEdgeTimeDeltas:
+            timeDeltaSum = timeDeltaSum + timeDelta
+
+        return timeDeltaSum / len(self.hallRisingEdgeTimeDeltas)
+        
+        
         
     
 
