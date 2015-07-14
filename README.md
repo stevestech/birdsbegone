@@ -6,6 +6,7 @@ issues GPIO and serial bus commands in order to achieve this state.
 
 The supervisor can be contacted using a network socket in order to set a new desired state for the robot.
 
+"""
 Socket commands:
 
 setDirection(channel, direction)
@@ -22,3 +23,4 @@ getMeasuredDirection(channel)
 getMeasuredSpeed(channel)
 
 getMeasuredCurrent(channel)
+"""
