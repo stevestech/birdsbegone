@@ -28,27 +28,62 @@ class ColorTracker:
 		# Scale image down so faster to process
 		self.scale_down = 2
 		# How much to erode and dilate by
-		self.morphology = 5
+		self.morphology = 1
 		# Blur
-		self.gaussian_blur = 5
+		self.gaussian_blur = 3
 		
-		# Color Range (input the range of colors to detect in HSV)
-		self.color_lower = np.array([0, 100, 40], np.uint8)
-		self.color_upper = np.array([10, 255, 255], np.uint8)
+		# Color Range Init (input the default range of colors to detect in HSV)
+		self.Hmin = 165
+		self.Hmax = 179
+		self.Smin = 80
+		self.Smax = 255
+		self.Vmin = 0
+		self.Vmax = 255
+		self.minArea = 3
+		self.color_lower = np.array([self.Hmin, self.Smin, self.Vmin ], np.uint8)
+		self.color_upper = np.array([self.Hmax , self.Smax, self.Vmax], np.uint8)
 		
+		
+		# Controls for adjusting ranges
+		cv2.namedWindow("Adjustment")
+		cv2.createTrackbar("Hmin", "Adjustment", self.Hmin, 179, self.nothing)
+		cv2.createTrackbar("Hmax", "Adjustment", self.Hmax, 179, self.nothing)
+		cv2.createTrackbar("Smin", "Adjustment", self.Smin, 255, self.nothing)
+		cv2.createTrackbar("Smax", "Adjustment", self.Smax, 255, self.nothing)
+		cv2.createTrackbar("Vmin", "Adjustment", self.Vmin, 255, self.nothing)
+		cv2.createTrackbar("Vmax", "Adjustment", self.Vmax, 255, self.nothing)
+		cv2.createTrackbar("minArea", "Adjustment", self.minArea, 1000, self.nothing)
+	
+	def nothing(self, *args):
+		pass
+	
+	def updateRanges(self):
+		self.Hmin = cv2.getTrackbarPos("Hmin", "Adjustment")
+		self.Hmax = cv2.getTrackbarPos("Hmax", "Adjustment")
+		self.Smin = cv2.getTrackbarPos("Smin", "Adjustment")
+		self.Smax = cv2.getTrackbarPos("Smax", "Adjustment")
+		self.Vmin = cv2.getTrackbarPos("Vmin", "Adjustment")
+		self.Vmax = cv2.getTrackbarPos("Vmax", "Adjustment")
+		self.minArea = cv2.getTrackbarPos("minArea", "Adjustment")
+		self.color_lower = np.array([self.Hmin, self.Smin, self.Vmin ], np.uint8)
+		self.color_upper = np.array([self.Hmax , self.Smax, self.Vmax], np.uint8)
+	
 	def trackColor(self):
-		self.tracked_img = self.raw_img
-		
 		# capture frames from camera
 		for frame in self.camera.capture_continuous(self.rawCapture, format="bgr", use_video_port=True):
 			img_stream = frame.array
-		
+			
+			
 			# Init return values
 			x_centre = 0
 			y_centre = 0
 			box_abs_size = 0
 			
 			img = img_stream
+			
+			# Update HSV ranges
+			self.updateRanges()
+			
 			# Gaussian Blur on image
 			img = cv2.GaussianBlur(img, (self.gaussian_blur, self.gaussian_blur), 0)
 			# Convert to HSV colorspace
@@ -62,7 +97,7 @@ class ColorTracker:
 			# Erode and Dilate
 			dilation = np.ones((self.morphology,self.morphology), "uint8")
 			erosion = np.ones((self.morphology,self.morphology), "uint8")
-			#color_binary = cv2.erode(color_binary, erosion)
+			color_binary = cv2.erode(color_binary, erosion)
 			color_binary = cv2.dilate(color_binary, dilation)
 			cv2.imshow("BinaryDiff", color_binary)
 			
@@ -80,7 +115,7 @@ class ColorTracker:
 			
 			if not largest_contour == None:
 				moment = cv2.moments(largest_contour)
-				if moment["m00"] > 100 / self.scale_down:
+				if moment["m00"] > self.minArea / self.scale_down:
 					# Find minimum-area bounding rectangle
 					rect = cv2.minAreaRect(largest_contour)
 					rect = ((rect[0][0] * self.scale_down, rect[0][1] * self.scale_down), (rect[1][0] * self.scale_down, rect[1][1] * self.scale_down), 0)
