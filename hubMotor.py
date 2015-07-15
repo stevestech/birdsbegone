@@ -4,6 +4,7 @@
 
 import RPi.GPIO as GPIO
 import time
+import threading
 
 class States:
     NEUTRAL = 0
@@ -19,8 +20,8 @@ class Channels:
  
 class HubMotor:
     def __init__(self, pinHall, pinReverse, pinThrottle, pinBrake):
-        # Used to find a moving mean of the wheel's velocity
-        self.hallRisingEdgeTimeDeltas = []
+        self.hallPulsesPerRevolution = 25
+        self.secondsPerMinute = 60
         
         #self.measuredDirecton = directions.forward
         #self.measuredCurrent = 0
@@ -29,11 +30,11 @@ class HubMotor:
         self.pinReverse = pinReverse
         self.pinThrottle = pinThrottle
         self.pinBrake = pinBrake
-
-        GPIO.setup(self.pinHall, GPIO.input)
-        GPIO.setup(self.pinReverse, GPIO.output)
-        GPIO.setup(self.pinThrottle, GPIO.output)
-        GPIO.setup(self.pinBrake, GPIO.output)
+        
+        GPIO.setup(self.pinHall, GPIO.IN)
+        GPIO.setup(self.pinReverse, GPIO.OUT)
+        GPIO.setup(self.pinThrottle, GPIO.OUT)
+        GPIO.setup(self.pinBrake, GPIO.OUT)
 
         # PWM frequency 100Hz, 0% duty cycle
         self.throttle = GPIO.PWM(self.pinThrottle, 100)
@@ -49,7 +50,7 @@ class HubMotor:
     def setState(self, state):
         self.state = state
 
-        if state == States.NEUTRAL
+        if state == States.NEUTRAL:
             self.setThrottle(0)
             GPIO.output(self.pinReverse, 1)
             GPIO.output(self.pinBrake, 1)
@@ -71,32 +72,35 @@ class HubMotor:
     def setThrottle(self, throttle):
         self.throttle.ChangeDutyCycle(throttle)
 
-    def hallSensorRisingEdgeCallback(self):
-        try:
-            # Prepend value to list
-            self.hallRisingEdgeTimeDeltas.insert(0, time.time() - self.timeOfLastHallRisingEdge)
-            
-        except NameError:
-            # self.timeOfLastHallRisingEdge is not defined the first time this method is called
-            pass
-           
-        self.timeOfLastHallRisingEdge = time.time()
+
+    def hallSensorRisingEdgeCallback(self, channel):
+        currentTime = time.time()
         
-        # Only keep 3 entries in the hallRisingEdgeTimeDeltas list, 0 through to 2
         try:
-            self.hallRisingEdgeTimeDeltas.pop(3)
+            self.secondsPerHallPulse = currentTime - self.timeOfLastHallRisingEdge
             
-        except IndexError:
+        except AttributeError:
+            # self.timeOfLastHallRisingEdge is not defined the first time that this
+            # method is called.
             pass
+            
+        self.timeOfLastHallRisingEdge = currentTime
         
 
     def getMeasuredSpeed(self):
-        # Average the last 10 time deltas to get the measured speed
-        timeDeltaSum = 0
+        # Returns wheel speed in revolutions per minute
+        try:
+            if time.time() - self.timeOfLastHallRisingEdge > 2:
+                # If it has been at least two seconds since the last hall pulse, use the current
+                # time as the time of the last hall pulse instead of the last recorded pulse.
+                # This causes speed to drop toward zero over time.
+                self.secondsPerHallPulse = time.time() - self.timeOfLastHallRisingEdge
+                
+            return self.secondsPerMinute / (self.hallPulsesPerRevolution * self.secondsPerHallPulse)
+            
+        except (ZeroDivisionError, AttributeError) as e:
+            return 0
+            
         
-        for timeDelta in self.hallRisingEdgeTimeDeltas:
-            timeDeltaSum = timeDeltaSum + timeDelta
-
-        return timeDeltaSum / len(self.hallRisingEdgeTimeDeltas)
         
  
