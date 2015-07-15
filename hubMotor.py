@@ -81,7 +81,7 @@ class HubMotor:
     def hallSensorRisingEdgeCallback(self):
         hallRisingEdgeTimeDeltas.append(datetime.now() - self.timeOfLastHallRisingEdge)
         self.timeOfLastHallRisingEdge = datetime.now()
-
+        
         # Only keep 10 entries in the hallRisingEdgeTimeDeltas list, 0 through to 9
         try:
             self.hallRisingEdgeTimeDeltas.pop(10)
