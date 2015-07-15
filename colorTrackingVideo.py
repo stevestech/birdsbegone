@@ -18,7 +18,7 @@ class ColorTracker:
 		self.camera.framerate = 24
 		
 		self.rawCapture = PiRGBArray(self.camera, size=(640,480))
-		# allow camera to warmup
+		# Allow camera to warmup
 		time.sleep(0.1)
 		
 		# Images
