@@ -20,8 +20,17 @@ class Channels:
  
 class HubMotor:
     def __init__(self, pinHall, pinReverse, pinThrottle, pinBrake):
+        # TEMPORARY
+        GPIO.cleanup()
+        GPIO.setmode(GPIO.BCM)
+        
+        
+        # Used to determine wheel RPM
+        self.hallPulseCount = 0
+        self.secondsPerRPMCalculation = 0.5        
         self.hallPulsesPerRevolution = 25
-        self.secondsPerMinute = 60
+        self.secondsPerMinute = 60        
+        self.wheelRPM = 0
         
         #self.measuredDirecton = directions.forward
         #self.measuredCurrent = 0
@@ -31,7 +40,7 @@ class HubMotor:
         self.pinThrottle = pinThrottle
         self.pinBrake = pinBrake
         
-        GPIO.setup(self.pinHall, GPIO.IN)
+        GPIO.setup(self.pinHall, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self.pinReverse, GPIO.OUT)
         GPIO.setup(self.pinThrottle, GPIO.OUT)
         GPIO.setup(self.pinBrake, GPIO.OUT)
@@ -42,7 +51,10 @@ class HubMotor:
 
         GPIO.add_event_detect(self.pinHall,
                               GPIO.RISING,
-                              callback=self.hallSensorRisingEdgeCallback)
+                              callback=self.incrementHallPulseCount)
+                              
+        # Run the self.determineWheelSpeed method repeatedly.
+        threading.Timer(self.secondsPerRPMCalculation, self.determineWheelSpeed).start()
 
         self.setState(States.NEUTRAL)
 
@@ -71,36 +83,23 @@ class HubMotor:
 
     def setThrottle(self, throttle):
         self.throttle.ChangeDutyCycle(throttle)
+        
+        
+    def incrementHallPulseCount(self, channel):
+        self.hallPulseCount = self.hallPulseCount + 1
 
 
-    def hallSensorRisingEdgeCallback(self, channel):
-        currentTime = time.time()
+    def determineWheelSpeed(self):
+        # Sets the value of self.wheelRPM
+        hallPulsesPerSecond = self.hallPulseCount / self.secondsPerRPMCalculation
+        revolutionsPerSecond = hallPulsesPerSecond / self.hallPulsesPerRevolution     
+        self.wheelRPM = revolutionsPerSecond * self.secondsPerMinute
         
-        try:
-            self.secondsPerHallPulse = currentTime - self.timeOfLastHallRisingEdge
-            
-        except AttributeError:
-            # self.timeOfLastHallRisingEdge is not defined the first time that this
-            # method is called.
-            pass
-            
-        self.timeOfLastHallRisingEdge = currentTime
+        print(str(self.hallPulseCount))
+        self.hallPulseCount = 0
         
-
-    def getMeasuredSpeed(self):
-        # Returns wheel speed in revolutions per minute
-        try:
-            if time.time() - self.timeOfLastHallRisingEdge > 2:
-                # If it has been at least two seconds since the last hall pulse, use the current
-                # time as the time of the last hall pulse instead of the last recorded pulse.
-                # This causes speed to drop toward zero over time.
-                self.secondsPerHallPulse = time.time() - self.timeOfLastHallRisingEdge
-                
-            return self.secondsPerMinute / (self.hallPulsesPerRevolution * self.secondsPerHallPulse)
-            
-        except (ZeroDivisionError, AttributeError) as e:
-            return 0
-            
+        threading.Timer(self.secondsPerRPMCalculation, self.determineWheelSpeed).start()
         
-        
- 
+    
+    def getWheelRPM(self):
+        return self.wheelRPM
