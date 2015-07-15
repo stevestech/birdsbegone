@@ -3,42 +3,35 @@
 # This class holds all the state methods and fields for one particular hub motor controller.
 
 import RPi.GPIO as GPIO
-from datetime import datetime
+import time
+
+class States:
+    NEUTRAL = 0
+    BRAKING = 1
+    FORWARD = 2
+    REVERSE = 3
+    
+class Channels:
+    FRONT_LEFT = 0
+    FRONT_RIGHT = 1
+    REAR_LEFT = 2
+    REAR_RIGHT = 3
  
 class HubMotor:
-    # Class variables shared by all instances
-
-    states = {'neutral': 0,
-              'braking': 1,
-              'forward': 2,
-              'reverse': 3}
-
-    directions = {'forward': 0,
-                  'reverse': 1}
-
-    channels = {'front_left': 0,
-                'front_right': 1,
-                'rear_left': 2,
-                'rear_right': 3}
-
-    def __init__(self, pinHall, pinRev, pinThrottle, pinBrake):
-        # Instance variables unique to each instance
-
-        self.state = states.neutral
-        
-        self.timeOfLastHallRisingEdge = datetime.now()
+    def __init__(self, pinHall, pinReverse, pinThrottle, pinBrake):
+        # Used to find a moving mean of the wheel's velocity
         self.hallRisingEdgeTimeDeltas = []
         
         #self.measuredDirecton = directions.forward
         #self.measuredCurrent = 0
 
         self.pinHall = pinHall
-        self.pinRev = pinRev
+        self.pinReverse = pinReverse
         self.pinThrottle = pinThrottle
         self.pinBrake = pinBrake
 
         GPIO.setup(self.pinHall, GPIO.input)
-        GPIO.setup(self.pinRev, GPIO.output)
+        GPIO.setup(self.pinReverse, GPIO.output)
         GPIO.setup(self.pinThrottle, GPIO.output)
         GPIO.setup(self.pinBrake, GPIO.output)
 
@@ -50,42 +43,49 @@ class HubMotor:
                               GPIO.RISING,
                               callback=self.hallSensorRisingEdgeCallback)
 
-        self.setState(states.neutral)
+        self.setState(States.NEUTRAL)
 
 
     def setState(self, state):
         self.state = state
 
-        if state == states.neutral:
+        if state == States.NEUTRAL
             self.setThrottle(0)
-            GPIO.output(self.pinRev, 1)
+            GPIO.output(self.pinReverse, 1)
             GPIO.output(self.pinBrake, 1)
 
-        elif state == states.braking:
+        elif state == States.BRAKING:
             self.setThrottle(0)
-            GPIO.output(self.pin_rev, 1)
-            GPIO.output(self.pin_brake, 0)
+            GPIO.output(self.pinReverse, 1)
+            GPIO.output(self.pinBrake, 0)
 
-        elif state == states.forward:
-            GPIO.output(self.pin_rev, 1)
-            GPIO.output(self.pin_brake, 1)
+        elif state == States.FORWARD:
+            GPIO.output(self.pinReverse, 1)
+            GPIO.output(self.pinBrake, 1)
 
-        elif state == states.reverse:
-            GPIO.output(self.pin_rev, 0)
-            GPIO.output(self.pin_brake, 1)
+        elif state == States.REVERSE:
+            GPIO.output(self.pinReverse, 0)
+            GPIO.output(self.pinBrake, 1)
         
 
     def setThrottle(self, throttle):
         self.throttle.ChangeDutyCycle(throttle)
 
     def hallSensorRisingEdgeCallback(self):
-        hallRisingEdgeTimeDeltas.append(datetime.now() - self.timeOfLastHallRisingEdge)
-        self.timeOfLastHallRisingEdge = datetime.now()
-        
-        # Only keep 10 entries in the hallRisingEdgeTimeDeltas list, 0 through to 9
         try:
-            self.hallRisingEdgeTimeDeltas.pop(10)
-
+            # Prepend value to list
+            self.hallRisingEdgeTimeDeltas.insert(0, time.time() - self.timeOfLastHallRisingEdge)
+            
+        except NameError:
+            # self.timeOfLastHallRisingEdge is not defined the first time this method is called
+            pass
+           
+        self.timeOfLastHallRisingEdge = time.time()
+        
+        # Only keep 3 entries in the hallRisingEdgeTimeDeltas list, 0 through to 2
+        try:
+            self.hallRisingEdgeTimeDeltas.pop(3)
+            
         except IndexError:
             pass
         
@@ -99,8 +99,4 @@ class HubMotor:
 
         return timeDeltaSum / len(self.hallRisingEdgeTimeDeltas)
         
-        
-        
-    
-
-    
+ 
