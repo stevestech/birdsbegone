@@ -1,16 +1,14 @@
 import socket
-import re
+import json
+from hubMotor import States
 
 class Networking:
-    def __init__(self, port, robot)
+    def __init__(self, port, robot):
         # Which port to connect to
         self.port = port
         
         # Holds instance of the robot class, used for updating the state of the robot after receiving network commands
         self.robot = robot
-        
-        # Used to terminate this thread
-        self.running = True
         
         # How much data to read from a socket
         self.bufferSize = 4096
@@ -20,15 +18,44 @@ class Networking:
         self.serversocket.listen(5)
         
     def run(self):
-        while self.running:
-            connection, address = serversocket.accept()
-            message = connection.recv(self.bufferSize)
+        while True:
+            connection, address = self.serversocket.accept()
             
-            # A complete command will terminate in a ) character.
-            completeMessage = re.search(r'\)$', message)
-            if completeMessage:
-                # Obtains the name of the command in the format "commandName(param1, param2)"
-                commandName = re.search(r'(^.+)\(', message).group(1)
+            while True:
+                # Repeat until message fully read (message is null)
+                message = connection.recv(self.bufferSize)
+                
+                if not message:
+                    break
+                    
+                self.executeJSON(message)
+                
+                        
+    def executeJSON(self, message):
+        try:
+            messageDict = json.loads(message)
             
-
+            # Set the throttle
+            if messageDict["commandName"] == "setThrottle":
+                self.robot.setThrottle(int(messageDict["throttle"]))
+                
+            # Set the hub motor state
+            elif messageDict["commandName"] == "setState":
+                if messageDict["state"] == "neutral":
+                    self.robot.setState(States.NEUTRAL)
+                    
+                if messageDict["state"] == "braking":
+                    self.robot.setState(States.BRAKING)
+                    
+                if messageDict["state"] == "forward":
+                    self.robot.setState(States.FORWARD)
+                    
+                if messageDict["state"] == "reverse":
+                    self.robot.setState(States.REVERSE)
+            
+        except (ValueError, KeyError) as e:
+            print(e.message)
+            return
+            
+            
           

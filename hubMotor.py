@@ -17,13 +17,12 @@ class Channels:
     FRONT_RIGHT = 1
     REAR_LEFT = 2
     REAR_RIGHT = 3
- 
-class HubMotor:
+
+class HubMotor:    
     def __init__(self, pinHall, pinReverse, pinThrottle, pinBrake):
         # TEMPORARY
         GPIO.cleanup()
         GPIO.setmode(GPIO.BCM)
-        
         
         # Used to determine wheel RPM
         self.hallPulseCount = 0
@@ -54,7 +53,8 @@ class HubMotor:
                               callback=self.incrementHallPulseCount)
                               
         # Run the self.determineWheelSpeed method repeatedly.
-        threading.Timer(self.secondsPerRPMCalculation, self.determineWheelSpeed).start()
+        self.wheelRPMUpdateThread = threading.Timer(self.secondsPerRPMCalculation, self.determineWheelSpeed)
+        self.wheelRPMUpdateThread.daemon = True
 
         self.setState(States.NEUTRAL)
 
@@ -83,6 +83,12 @@ class HubMotor:
 
     def setThrottle(self, throttle):
         if (self.state != States.NEUTRAL) and (self.state != States.BRAKING):
+            if throttle > 100:
+                throttle = 100
+                
+            elif throttle < 0:
+                throttle = 0
+                
             self.throttle.ChangeDutyCycle(throttle)
             
         else:
@@ -99,10 +105,10 @@ class HubMotor:
         revolutionsPerSecond = hallPulsesPerSecond / self.hallPulsesPerRevolution     
         self.wheelRPM = revolutionsPerSecond * self.secondsPerMinute
         
-        print(str(self.hallPulseCount))
         self.hallPulseCount = 0
         
-        threading.Timer(self.secondsPerRPMCalculation, self.determineWheelSpeed).start()
+        if self.running:
+            threading.Timer(self.secondsPerRPMCalculation, self.determineWheelSpeed).start()
         
     
     def getWheelRPM(self):
