@@ -20,6 +20,19 @@ git commit --author="username" -m "commit msg"
 Remeber to use origin master when pushing/pulling!
 
 
+Using the WiFI Dongle on University Internet:
+
+Plug in WiFi Dongle
+
+Connect to UCVisitor
+
+In web browser navigate to bookmarks -> UC Visitor Enabler
+
+Alternativly visit: https://ucwlc1auth.canterbury.ac.nz
+
+Log in and enjoy the sweet sweet internet!
+
+
 Supervisor
 ----------
 
