@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Birds-Be-Gone!</title>
+	<link rel="stylesheet" href="/jquery-ui/jquery-ui.css">
+	<link rel="stylesheet" href="/style.css">
+	<script src="jquery.js"></script>
+	<script src="/jquery-ui/jquery-ui.js"></script>
+	<script src="/controls.js"></script>
+</head>
+
+<body>
+	<button class="stop">Emergency Stop</button>
+	
+	<div class="global">
+		<h3>Global controls</h3>
+		
+		<!-- Div-ception lol needed for the accordion to know it's sections -->
+		<div>
+		
+			<div class="states">
+				<input type="radio" id="global-states-neutral" name="global-states" checked="checked" value="neutral"><label for="global-states-neutral">Neutral</label>
+				<input type="radio" id="global-states-braking" name="global-states" value="braking"><label for="global-states-braking">Braking</label>
+				<input type="radio" id="global-states-forward" name="global-states" value="forward"><label for="global-states-forward">Forward</label>
+				<input type="radio" id="global-states-reverse" name="global-states" value="reverse"><label for="global-states-reverse">Reverse</label>
+			</div>
+			
+			<div class="throttle">
+				
+				<span class="name">Throttle:</span>
+				<span class="current-value">0</span>
+				<div class="slider"></div>
+				
+			</div>
+			
+		</div>
+		
+	</div>
+</body>
+</html>

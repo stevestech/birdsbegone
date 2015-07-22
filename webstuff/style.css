@@ -1,0 +1,56 @@
+
+* {
+	/*
+	 * Making all elements unselectable stops annoying blue boxes
+	 * when dragging with the mouse.
+	 */
+	-moz-user-select: -moz-none;
+	-khtml-user-select: none;
+	-webkit-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+
+
+body {
+	font-family: helvetica, arial, sans-serif;
+	font-size: 15px;
+}
+
+
+
+
+.stop {
+	/*
+	 * I wonder which button this could be referring to
+	 */
+	font-size: 3.5em;
+	width: 100%;
+}
+
+
+
+
+
+.global .throttle {
+	margin-top: 15px;
+}
+
+.global .throttle .name {
+	/*
+	 * Allows other objects (the slider) to occupy
+	 * the same vertical space as the text label
+	 */
+	float: left;
+}
+
+.global .throttle .current-value {
+	float: left;
+	margin-left: 5px;
+}
+
+.global .throttle .slider {
+	margin-left: 120px;
+	margin-right: 0px;
+}
