@@ -69,7 +69,7 @@ class ColorTracker:
 		self.color_upper = np.array([self.Hmax , self.Smax, self.Vmax], np.uint8)
 	
 	def trackColor(self):
-		# capture frames from camera
+		# Capture frames from camera
 		for frame in self.camera.capture_continuous(self.rawCapture, format="bgr", use_video_port=True):
 			img_stream = frame.array
 			
