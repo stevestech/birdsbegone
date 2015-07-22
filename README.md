@@ -1,36 +1,34 @@
-Useful Commands to run on Raspberry Pi:
-
+Useful RPi Commands
+----------
 
 Set date manually if no internet:
-
+```
 sudo date -s "Wed Jul 22 14:05:00 NZST 2015"
-
+```
 
 Work in cv virtual enviroment:
 
+```
 source ~/.profile
-
 workon cv
-
+```
 
 Author commits using:
 
+```
 git commit --author="username" -m "commit msg"
-
+```
 Remeber to use origin master when pushing/pulling!
 
-
 Using the WiFI Dongle on University Internet:
-
+```
 Plug in WiFi Dongle
-
 Connect to UCVisitor
-
 In web browser navigate to bookmarks -> UC Visitor Enabler
-
 Alternativly visit: https://ucwlc1auth.canterbury.ac.nz
-
 Log in and enjoy the sweet sweet internet!
+```
+
 
 
 Supervisor
