@@ -18,7 +18,7 @@ Author commits using:
 ```
 git commit --author="username" -m "commit msg"
 ```
-Remeber to use origin master when pushing/pulling!
+Repo is now setup to allow direct pushing and pulling, no origin master required =]
 
 Using the WiFI Dongle on University Internet:
 ```
