@@ -27,7 +27,7 @@ class HubMotor:
         
         # Used to determine wheel RPM
         self.hallPulseCount = 0
-        self.secondsPerRPMCalculation = 0.5        
+        self.secondsPerRPMCalculation = 0.5
         self.hallPulsesPerRevolution = 25
         self.secondsPerMinute = 60        
         self.wheelRPM = 0
@@ -82,7 +82,11 @@ class HubMotor:
         
 
     def setThrottle(self, throttle):
-        self.throttle.ChangeDutyCycle(throttle)
+        if (self.state != States.NEUTRAL) and (self.state != States.BRAKING):
+            self.throttle.ChangeDutyCycle(throttle)
+            
+        else:
+            self.throttle.ChangeDutyCycle(0)
         
         
     def incrementHallPulseCount(self, channel):
