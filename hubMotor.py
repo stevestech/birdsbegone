@@ -109,7 +109,8 @@ class HubMotor:
         self.hallPulseCount = 0
         
         if self.running:
-            threading.Timer(self.secondsPerRPMCalculation, self.determineWheelSpeed).start()
+            self.wheelRPMUpdateThread = threading.Timer(self.secondsPerRPMCalculation, self.determineWheelSpeed)
+            self.wheelRPMUpdateThread.start()
         
     
     def getWheelRPM(self):
