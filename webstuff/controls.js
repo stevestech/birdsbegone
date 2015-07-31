@@ -22,11 +22,6 @@ $(function() {
 		}
 	});
 	
-	// Allow sliders to be controlled via the mouse-wheel
-	globalThrottleSlider.mousewheel( function(event, delta) {
-		globalThrottleSlider.slider("value", globalThrottleSlider.slider("value") + delta*2);
-	});
-	
 	// Event listener for the global state radio buttons
 	$( ".global .states input[type=radio]" ).change(function() {
 		$.ajax("/cgi-bin/command.cgi?commandName=setState&state=" + this.value);
