@@ -13,30 +13,91 @@ var waitForFinalEvent = (function () {
   };
 })();
 
+
+
+// Global to keep track of whether the status is hidden
+var statusDisplayed = true;
+
+function setStatus(show, message) {
+	if (show && statusDisplayed) {
+		$("#status").text(message);
+	}
+	
+	else if (show && !statusDisplayed) {
+		$("#status").text(message);
+		$("#status").toggle("blind");
+		statusDisplayed = true;
+	}
+	
+	else if (!show && statusDisplayed) {
+		$("#status").toggle("blind");
+		statusDisplayed = false;
+	}
+}
+	
+	
+
+// Sends a command to the supervisor, and parses the response. Also
+// displays any errors that are encountered.
+function sendCommand(commands) {
+	$.ajax({
+		url: "/cgi-bin/command.cgi",
+		data: commands,
+		dataType: "json",
+		success: function(data, status, jqHXR) {
+			
+			if (data["exception"] == false) {
+				setStatus(false);
+			}
+			
+			else {
+				
+				if (data["exception"] == "[Errno 111] Connection refused") {
+					setStatus(true, "The robot supervisor program is not running.");
+				}
+				
+				else {
+					setStatus(true, data["exception"]);
+				}
+				
+			}
+			
+			// TODO: Update controls based on the returned state of the supervisor
+			//$( "#manual-states-neutral" ).prop("checked", true);
+			//$( ".manual .states" ).buttonset("refresh");
+			
+		},
+		
+		error: function(jqHXR, status, error) {	
+			setStatus(true, "Something went wrong with the command.cgi script.");
+		}
+	});
+}	
+
 // Hook jquery-ui onto the appropriate elements
 $(function() {
-	$( ".manual" ).accordion({
+	$("#manual").accordion({
 		heightStyle: "content"
 	});
 	
-	$( "button" ).button();
+	$("button").button();
 	
-	$( ".manual .states" ).buttonset();
+	$("#states").buttonset();
 	
-	$( ".manual .throttle .buttonset" ).buttonset();
-	$( ".manual .fl-angle .buttonset" ).buttonset();
+	$(".buttonset").buttonset();
 	
-	$( ".manual .throttle .slider" ).slider({
+	$("#throttle .slider").slider({
 		value: 0,
 		min: 0,
 		max: 100,
 		animate: "slow"
 	});
 	
-	$( ".manual .fl-angle .slider" ).slider({
+	$("#fl-angle .slider").slider({
 		value: 0,
 		min: -360,
 		max: 360,
+		step: 15,
 		animate: "slow"
 	});
 });
@@ -45,101 +106,113 @@ $(function() {
 $(function() {
 	
 	// Emergency stop button
-	$( ".stop" ).mousedown(function(event) {
+	$("#stop").mousedown(function(event) {
 		// Left mouse button
 		if(event.which === 1) {
-			$.ajax("/cgi-bin/command.cgi?commandName=setState&state=neutral");
+			sendCommand({
+				commandName: "setState",
+				state: "neutral"
+			});
 
 			// This also triggers the slidechange event, sending the
 			// throttle value to the supervisor.
-			$( ".manual .throttle .slider" ).slider("value", 0);
-			
-			$( "#manual-states-neutral" ).prop("checked", true);
-			$( ".manual .states" ).buttonset("refresh");
+			$("#throttle .slider").slider("value", 0);
 		}
 	});
 
 
 	
 	// Change state using the state radio buttons
-	$( ".manual .states input[type=radio]" ).change(function() {
-		alert("State = " + this.value);
-		$.ajax("/cgi-bin/command.cgi?commandName=setState&state=" + this.value);
+	$("#states input").change(function() {
+		sendCommand({
+			commandName: "setState",
+			state: this.value
+		});
 	});
 
 
 	
 	// Change throttle using the slider control
-	$( ".manual .throttle .slider" ).on("slidechange", function( event, ui ) {
-		$( ".manual .throttle .value" ).text(ui.value);
-		$.ajax("/cgi-bin/command.cgi?commandName=setThrottle&throttle=" + ui.value);
+	$("#throttle .slider").on("slidechange", function(event, ui) {
+		$("#throttle .value").text(ui.value);
+		
+		sendCommand({
+			commandName: "setThrottle",
+			wheel: "all",
+			throttle: ui.value
+		});
 	});
 	
 	// Set throttle to zero using button
-	$( ".manual .throttle .buttonset .0" ).mousedown(function(event) {
+	$("#throttle .0").mousedown(function(event) {
 		// Left mouse button
 		if(event.which === 1) {
-			$( ".manual .throttle .slider" ).slider("value", 0);
+			$("#throttle .slider").slider("value", 0);
 		}
 	});
 	
 	// Decrease throttle using button
-	$( ".manual .throttle .buttonset .decrease" ).mousedown(function (event) {
+	$("#throttle .decrease").mousedown(function (event) {
 		// Left mouse button
 		if(event.which === 1) {
-			var newValue = $( ".manual .throttle .slider" ).slider("value");
+			var newValue = $("#throttle .slider").slider("value");
 			newValue -= 10;
 			
-			$( ".manual .throttle .slider" ).slider("value", newValue);
+			$("#throttle .slider").slider("value", newValue);
 		}
 	});
 	
 	// Increase throttle using button
-	$( ".manual .throttle .increase" ).mousedown(function (event) {
+	$("#throttle .increase").mousedown(function (event) {
 		// Left mouse button
 		if(event.which === 1) {
-			var newValue = $( ".manual .throttle .slider" ).slider("value");
+			var newValue = $("#throttle .slider").slider("value");
 			newValue += 10;
 			
-			$( ".manual .throttle .slider" ).slider("value", newValue);
+			$("#throttle .slider").slider("value", newValue);
 		}
 	});
 	
 	
 	
 	// Change FL-angle using the slider control
-	$( ".manual .fl-angle .slider" ).on("slidechange", function( event, ui ) {
-		$( ".manual .fl-angle .value" ).text(ui.value);
-		$.ajax("/cgi-bin/command.cgi?commandName=setAngle&wheel=FL&angle=" + ui.value);
+	$("#fl-angle .slider").on("slidechange", function(event, ui) {
+		$("#fl-angle .value").text(ui.value + "°");
+		
+		sendCommand({
+			commandName: "setAngle",
+			wheel: "fl",
+			angle: ui.value
+		});
 	});
 	
 	// Set throttle to zero using button
-	$( ".manual .fl-angle .buttonset .0" ).mousedown(function(event) {
+	$("#fl-angle .0").mousedown(function(event) {
 		// Left mouse button
 		if(event.which === 1) {
-			$( ".manual .fl-angle .slider" ).slider("value", 0);
+			$("#fl-angle .slider").slider("value", 0);
 		}
 	});
 	
 	// Decrease throttle using button
-	$( ".manual .fl-angle .buttonset .decrease" ).mousedown(function (event) {
+	$("#fl-angle .decrease").mousedown(function (event) {
 		// Left mouse button
 		if(event.which === 1) {
-			var newValue = $( ".manual .fl-angle .slider" ).slider("value");
-			newValue -= 45;
+			var newValue = $("#fl-angle .slider").slider("value");
+			newValue -= 15;
 			
-			$( ".manual .fl-angle .slider" ).slider("value", newValue);
+			$("#fl-angle .slider").slider("value", newValue);
 		}
 	});
 	
 	// Increase throttle using button
-	$( ".manual .fl-angle .increase" ).mousedown(function (event) {
+	$("#fl-angle .increase").mousedown(function (event) {
 		// Left mouse button
 		if(event.which === 1) {
-			var newValue = $( ".manual .fl-angle .slider" ).slider("value");
-			newValue += 45;
+			var newValue = $("#fl-angle .slider").slider("value");
+			newValue += 15;
 			
-			$( ".manual .fl-angle .slider" ).slider("value", newValue);
+			$("#fl-angle .slider").slider("value", newValue);
 		}
 	});	
 });
@@ -147,12 +220,12 @@ $(function() {
 
 // Set width of sliders based on width of existing elements
 function sizeSliders() {
-	var width = $(".manual .throttle").width();
-	width -= 340;
+	var width = $("#throttle").width();
+	width -= 380;
 	width = width + "px";
 	
-	$(".manual .throttle .slider").css("width", width);
-	$(".manual .fl-angle .slider").css("width", width);
+	$("#throttle .slider").css("width", width);
+	$("#fl-angle .slider").css("width", width);
 }
 
 $(window).on("load", sizeSliders);

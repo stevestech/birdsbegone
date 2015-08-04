@@ -13,15 +13,16 @@
 
 
 
+/* Position the content and sticky footer */
 body {
-	font-family: helvetica, arial, sans-serif;
-	font-size: 15px;
+	font-family: Lucida Grande,Lucida Sans,Arial,sans-serif;
+	font-size: 1em;
 }
 
 
 
 
-.stop {
+#stop {
 	/*
 	 * I wonder which button this could be referring to
 	 */
@@ -33,21 +34,23 @@ body {
 
 
 
-.manual .throttle {
+#throttle {
 	/* Moves the throttle slider and all associated elements */
 	margin-top: 25px;
 }
 
-.manual .throttle .label {
+#throttle .label {
 	/* Inline-block allows us to place elements from left-to-right, while
 	 * using margins to control the layout */
 	display: inline-block;
 	position: relative;
 	top: 2px;
-	width: 80px;
+	
+	/* Fixed width keeps the sliders aligned, despite different label text */
+	width: 100px;
 }
 
-.manual .throttle .value {
+#throttle .value {
 	display: inline-block;
 	margin-left: 5px;
 	position: relative;
@@ -58,58 +61,64 @@ body {
 	width: 13px;
 }
 
-.manual .throttle .buttonset {
+#throttle .buttonset {
 	display: inline-block;
 	margin-left: 30px;
 }
 
-.manual .throttle .slider {
+#throttle .slider {
 	display: inline-block;
 	margin-left: 20px;
 	top: 2px;
 	/* Width is calculated in JavaScript */
 }
 
-.manual .throttle .increase {
+#throttle .increase {
 	display: inline-block;
 	margin-left: 20px;
 }
 
 
 
-.manual .fl-angle {
+
+#fl-angle {
 	margin-top: 25px;
 }
 
-.manual .fl-angle .label {
+#fl-angle .label {
 	display: inline-block;
 	position: relative;
 	top: 2px;
-	width: 80px;
+	width: 100px;
 }
 
-.manual .fl-angle .value {
+#fl-angle .value {
 	display: inline-block;
 	margin-left: 5px;
 	position: relative;
 	top: 2px;
-	
 	width: 13px;
 }
 
-.manual .fl-angle .buttonset {
+#fl-angle .buttonset {
 	display: inline-block;
 	margin-left: 30px;
 }
 
-.manual .fl-angle .slider {
+#fl-angle .slider {
 	display: inline-block;
 	margin-left: 20px;
 	top: 2px;
 	/* Width is calculated in JavaScript */
 }
 
-.manual .fl-angle .increase {
+#fl-angle .increase {
 	display: inline-block;
 	margin-left: 20px;
+}
+
+
+
+#status {
+	margin-top: 20px;
 }

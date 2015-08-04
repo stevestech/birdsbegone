@@ -5,31 +5,39 @@
 	<title>Birds-Be-Gone!</title>
 	<link rel="stylesheet" href="/jquery-ui/jquery-ui.css">
 	<link rel="stylesheet" href="/style.css">
+	<link rel="shortcut icon" href="/favicon.ico">
 	<script src="/jquery.js"></script>
 	<script src="/jquery-ui/jquery-ui.js"></script>
 	<script src="/controls.js"></script>
 </head>
 
 <body>
-	<button class="stop">Emergency Stop</button>
+	<button id="stop">Emergency Stop</button>
 	
-	<div class="manual">
+	<div id="manual">
 		<h3>Manual controls</h3>
 		
-		<!-- Div-ception lol needed for the accordion to know it's sections -->
+		<!-- Div-ception lol needed for the accordion to know its sections -->
 		<div>
 		
-			<div class="states">
+			<div id="states">
 				
-				<input type="radio" id="manual-states-reverse" name="manual-states" value="reverse"><label for="manual-states-reverse">Reverse</label>
-				<input type="radio" id="manual-states-braking" name="manual-states" value="braking"><label for="manual-states-braking">Braking</label>
-				<input type="radio" id="manual-states-neutral" name="manual-states" checked="checked" value="neutral"><label for="manual-states-neutral">Neutral</label>
-				<input type="radio" id="manual-states-forward" name="manual-states" value="forward"><label for="manual-states-forward">Forward</label>
+				<input type="radio" id="manual-states-reverse" name="manual-states" value="reverse">
+					<label for="manual-states-reverse">Reverse</label>
+					
+				<input type="radio" id="manual-states-braking" name="manual-states" value="braking">
+					<label for="manual-states-braking">Braking</label>
+					
+				<input type="radio" id="manual-states-neutral" name="manual-states" checked="checked" value="neutral">
+					<label for="manual-states-neutral">Neutral</label>
+					
+				<input type="radio" id="manual-states-forward" name="manual-states" value="forward">
+					<label for="manual-states-forward">Forward</label>
 			
 			</div>
 			
 			
-			<div class="throttle">
+			<div id="throttle">
 				
 				<span class="label">Throttle:</span>
 				<span class="value">0</span>
@@ -47,10 +55,10 @@
 			</div>
 			
 			
-			<div class="fl-angle">
+			<div id="fl-angle">
 				
 				<span class="label">FL Angle:</span>
-				<span class="value">0</span>
+				<span class="value">0°</span>
 				
 				<span class="buttonset">
 					
@@ -67,5 +75,9 @@
 		</div>
 		
 	</div>
+	
+	<div id="status" class="ui-state-error"></div>
+	
+</div>
 </body>
 </html>
