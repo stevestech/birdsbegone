@@ -13,24 +13,54 @@
 <body>
 	<button class="stop">Emergency Stop</button>
 	
-	<div class="global">
-		<h3>Global controls</h3>
+	<div class="manual">
+		<h3>Manual controls</h3>
 		
 		<!-- Div-ception lol needed for the accordion to know it's sections -->
 		<div>
 		
 			<div class="states">
-				<input type="radio" id="global-states-neutral" name="global-states" checked="checked" value="neutral"><label for="global-states-neutral">Neutral</label>
-				<input type="radio" id="global-states-braking" name="global-states" value="braking"><label for="global-states-braking">Braking</label>
-				<input type="radio" id="global-states-forward" name="global-states" value="forward"><label for="global-states-forward">Forward</label>
-				<input type="radio" id="global-states-reverse" name="global-states" value="reverse"><label for="global-states-reverse">Reverse</label>
+				
+				<input type="radio" id="manual-states-reverse" name="manual-states" value="reverse"><label for="manual-states-reverse">Reverse</label>
+				<input type="radio" id="manual-states-braking" name="manual-states" value="braking"><label for="manual-states-braking">Braking</label>
+				<input type="radio" id="manual-states-neutral" name="manual-states" checked="checked" value="neutral"><label for="manual-states-neutral">Neutral</label>
+				<input type="radio" id="manual-states-forward" name="manual-states" value="forward"><label for="manual-states-forward">Forward</label>
+			
 			</div>
+			
 			
 			<div class="throttle">
 				
-				<span class="name">Throttle:</span>
-				<span class="current-value">0</span>
-				<div class="slider"></div>
+				<span class="label">Throttle:</span>
+				<span class="value">0</span>
+			
+				<span class="buttonset">
+
+					<button class="0">0</button>
+					<button class="decrease"><</button>
+
+				</span>
+				
+				<span class="slider"></span>
+				<button class="increase">></button>
+				
+			</div>
+			
+			
+			<div class="fl-angle">
+				
+				<span class="label">FL Angle:</span>
+				<span class="value">0</span>
+				
+				<span class="buttonset">
+					
+					<button class="0">0</button>
+					<button class="decrease"><</button>
+					
+				</span>
+				
+				<span class="slider"></span>
+				<button class="increase">></button>
 				
 			</div>
 			

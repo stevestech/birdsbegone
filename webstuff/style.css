@@ -33,24 +33,83 @@ body {
 
 
 
-.global .throttle {
-	margin-top: 15px;
+.manual .throttle {
+	/* Moves the throttle slider and all associated elements */
+	margin-top: 25px;
 }
 
-.global .throttle .name {
-	/*
-	 * Allows other objects (the slider) to occupy
-	 * the same vertical space as the text label
-	 */
-	float: left;
+.manual .throttle .label {
+	/* Inline-block allows us to place elements from left-to-right, while
+	 * using margins to control the layout */
+	display: inline-block;
+	position: relative;
+	top: 2px;
+	width: 80px;
 }
 
-.global .throttle .current-value {
-	float: left;
+.manual .throttle .value {
+	display: inline-block;
 	margin-left: 5px;
+	position: relative;
+	top: 2px;
+	
+	/* A fixed width stops the whole layout changing as the value changes
+	 * to 1, 2 or 3 digits. */
+	width: 13px;
 }
 
-.global .throttle .slider {
-	margin-left: 120px;
-	margin-right: 0px;
+.manual .throttle .buttonset {
+	display: inline-block;
+	margin-left: 30px;
+}
+
+.manual .throttle .slider {
+	display: inline-block;
+	margin-left: 20px;
+	top: 2px;
+	/* Width is calculated in JavaScript */
+}
+
+.manual .throttle .increase {
+	display: inline-block;
+	margin-left: 20px;
+}
+
+
+
+.manual .fl-angle {
+	margin-top: 25px;
+}
+
+.manual .fl-angle .label {
+	display: inline-block;
+	position: relative;
+	top: 2px;
+	width: 80px;
+}
+
+.manual .fl-angle .value {
+	display: inline-block;
+	margin-left: 5px;
+	position: relative;
+	top: 2px;
+	
+	width: 13px;
+}
+
+.manual .fl-angle .buttonset {
+	display: inline-block;
+	margin-left: 30px;
+}
+
+.manual .fl-angle .slider {
+	display: inline-block;
+	margin-left: 20px;
+	top: 2px;
+	/* Width is calculated in JavaScript */
+}
+
+.manual .fl-angle .increase {
+	display: inline-block;
+	margin-left: 20px;
 }
