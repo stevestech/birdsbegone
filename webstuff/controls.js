@@ -35,7 +35,50 @@ function setStatus(show, message) {
 	}
 }
 	
-	
+function updateControls(data) {
+
+	switch(data["fl-state"]) {
+		case "neutral":
+			$("#manual-states-neutral").prop("checked", true);
+			$("#manual-states-braking").prop("checked", false);
+			$("#manual-states-forward").prop("checked", false);
+			$("#manual-states-reverse").prop("checked", false);
+			$("#states").buttonset("refresh");
+			break;
+			
+		case "braking":
+			$("#manual-states-braking").prop("checked", true);		
+			$("#manual-states-neutral").prop("checked", false);
+			$("#manual-states-forward").prop("checked", false);
+			$("#manual-states-reverse").prop("checked", false);
+			$("#states").buttonset("refresh");
+			break;
+			
+		case "forward":
+			$("#manual-states-forward").prop("checked", true);		
+			$("#manual-states-braking").prop("checked", false);		
+			$("#manual-states-neutral").prop("checked", false);
+			$("#manual-states-reverse").prop("checked", false);
+			$("#states").buttonset("refresh");
+			break;
+		
+		case "reverse":
+			$("#manual-states-reverse").prop("checked", true);		
+			$("#manual-states-forward").prop("checked", false);		
+			$("#manual-states-braking").prop("checked", false);		
+			$("#manual-states-neutral").prop("checked", false);
+			$("#states").buttonset("refresh");
+			break;
+	}
+
+	// Sliders should not broadcast this value change back to the
+	// supervisor, or a looping mess of sockets would result
+	$("#throttle .slider").addClass("updated");
+	$("#fl-angle .slider").addClass("updated");
+
+	$("#throttle .slider").slider("value", data["fl-throttle"]);
+	$("#fl-angle .slider").slider("value", data["fl-angle"]);
+}
 
 // Sends a command to the supervisor, and parses the response. Also
 // displays any errors that are encountered.
@@ -45,26 +88,15 @@ function sendCommand(commands) {
 		data: commands,
 		dataType: "json",
 		success: function(data, status, jqHXR) {
-			
-			if (data["exception"] == false) {
-				setStatus(false);
+				
+			if ("error" in data) {
+				setStatus(true, data["error"]);
 			}
 			
 			else {
-				
-				if (data["exception"] == "[Errno 111] Connection refused") {
-					setStatus(true, "The robot supervisor program is not running.");
-				}
-				
-				else {
-					setStatus(true, data["exception"]);
-				}
-				
+				setStatus(false);
+				updateControls(data);		
 			}
-			
-			// TODO: Update controls based on the returned state of the supervisor
-			//$( "#manual-states-neutral" ).prop("checked", true);
-			//$( ".manual .states" ).buttonset("refresh");
 			
 		},
 		
@@ -110,7 +142,8 @@ $(function() {
 		// Left mouse button
 		if(event.which === 1) {
 			sendCommand({
-				commandName: "setState",
+				cmd: "setState",
+				wheel: "all",
 				state: "neutral"
 			});
 
@@ -125,7 +158,8 @@ $(function() {
 	// Change state using the state radio buttons
 	$("#states input").change(function() {
 		sendCommand({
-			commandName: "setState",
+			cmd: "setState",
+			wheel: "all",
 			state: this.value
 		});
 	});
@@ -136,11 +170,18 @@ $(function() {
 	$("#throttle .slider").on("slidechange", function(event, ui) {
 		$("#throttle .value").text(ui.value);
 		
-		sendCommand({
-			commandName: "setThrottle",
-			wheel: "all",
-			throttle: ui.value
-		});
+		// Should we broadcast this value change to the supervisor?
+		if ($("#throttle .slider").hasClass("updated")) {
+			$("#throttle .slider").removeClass("updated");
+		}
+		
+		else {		
+			sendCommand({
+				cmd: "setThrottle",
+				wheel: "all",
+				throttle: ui.value
+			});
+		}
 	});
 	
 	// Set throttle to zero using button
@@ -179,11 +220,18 @@ $(function() {
 	$("#fl-angle .slider").on("slidechange", function(event, ui) {
 		$("#fl-angle .value").text(ui.value + "°");
 		
-		sendCommand({
-			commandName: "setAngle",
-			wheel: "fl",
-			angle: ui.value
-		});
+		// Should we broadcast this value change to the supervisor?
+		if ($("#fl-angle .slider").hasClass("updated")) {
+			$("#fl-angle .slider").removeClass("updated");
+		}
+		
+		else {
+			sendCommand({
+				cmd: "setAngle",
+				wheel: "fl",
+				angle: ui.value
+			});
+		}
 	});
 	
 	// Set throttle to zero using button
@@ -228,7 +276,16 @@ function sizeSliders() {
 	$("#fl-angle .slider").css("width", width);
 }
 
-$(window).on("load", sizeSliders);
+$(window).on("load", function() {
+	sizeSliders();
+	
+	// update isn't a registered command on the supervisor, but this
+	// will still result in the supervisor sending the state to the
+	// web client, it does so for all commands.
+	sendCommand({
+		cmd: "update"
+	});
+});
 
 $(window).on("resize", function() {
 	waitForFinalEvent(sizeSliders, 100, "unique1");
