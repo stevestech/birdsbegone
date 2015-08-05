@@ -17,7 +17,7 @@ class State:
         backLeftWheel = wheel.Wheel()
         backRightWheel = wheel.Wheel()
         
-        frontLeftVisionResult = visionTrackingResult.VisionTrackingResult()
-        frontRightVisionResult = visionTrackingResult.VisionTrackingResult()
-        backLeftVisionResult = visionTrackingResult.VisionTrackingResult()
-        backRightVisionResult = visionTrackingResult.VisionTrackingResult()
+        leftVisionResult = visionTrackingResult.VisionTrackingResult()
+        rightVisionResult = visionTrackingResult.VisionTrackingResult()
+        frontVisionResult = visionTrackingResult.VisionTrackingResult()
+        backVisionResult = visionTrackingResult.VisionTrackingResult()
