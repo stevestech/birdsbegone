@@ -40,33 +40,21 @@ function updateControls(data) {
 	switch(data["fl-state"]) {
 		case "neutral":
 			$("#manual-states-neutral").prop("checked", true);
-			$("#manual-states-braking").prop("checked", false);
-			$("#manual-states-forward").prop("checked", false);
-			$("#manual-states-reverse").prop("checked", false);
 			$("#states").buttonset("refresh");
 			break;
 			
 		case "braking":
 			$("#manual-states-braking").prop("checked", true);		
-			$("#manual-states-neutral").prop("checked", false);
-			$("#manual-states-forward").prop("checked", false);
-			$("#manual-states-reverse").prop("checked", false);
 			$("#states").buttonset("refresh");
 			break;
 			
 		case "forward":
 			$("#manual-states-forward").prop("checked", true);		
-			$("#manual-states-braking").prop("checked", false);		
-			$("#manual-states-neutral").prop("checked", false);
-			$("#manual-states-reverse").prop("checked", false);
 			$("#states").buttonset("refresh");
 			break;
 		
 		case "reverse":
 			$("#manual-states-reverse").prop("checked", true);		
-			$("#manual-states-forward").prop("checked", false);		
-			$("#manual-states-braking").prop("checked", false);		
-			$("#manual-states-neutral").prop("checked", false);
 			$("#states").buttonset("refresh");
 			break;
 	}
