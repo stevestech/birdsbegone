@@ -24,27 +24,31 @@ for key in formData.keys():
 # Convert the dict into a JSON string
 message = json.dumps(dataDict)
 
-# Send the JSON string to the supervisor using a network socket
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+while True:
+	# Send the JSON string to the supervisor using a network socket
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-try:
-	s.connect(("localhost", port))
-	
-except socket.error:
-	print("Content-type: text/html\r\n\r\n")
-	print(json.dumps({"error": "The robot supervisor program is not running."}))
-	sys.exit(0)
-	
-s.settimeout(2)
-s.sendall(message)
+	try:
+		s.connect(("localhost", port))
+		
+	except socket.error:
+		print("Content-type: text/html\r\n\r\n")
+		print(json.dumps({"error": "The robot supervisor program is not running."}))
+		sys.exit(0)
+		
+	s.settimeout(2)
+	s.sendall(message)
 
-# Receive state from the supervisor
-try:
-	message = s.recv(bufferSize)
-	s.close()
-	
-except socket.timeout:
-	message = json.dumps({"error": "Did not receive a state update from the robot supervisor."})
+	# Receive state from the supervisor
+	try:
+		message = s.recv(bufferSize)
+		s.close()
+		
+	except socket.timeout:
+		continue
+		
+	if message.startswith("{") and message.endswith("}"):
+		break
 	
 
 print("Content-type: text/html\r\n\r\n")
