@@ -2,5 +2,7 @@
 
 class VisionTrackingResult:
     def __init__():
-        objectLocation = 0
-        objectSize = 0
+        objectX = 0
+        objectY = 0
+        
+        objectDistance = 0
