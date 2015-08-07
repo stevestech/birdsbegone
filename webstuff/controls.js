@@ -109,7 +109,7 @@ $(function() {
 	$("#throttle .slider").slider({
 		value: 0,
 		min: 0,
-		max: 100,
+		max: 255,
 		animate: "slow"
 	});
 	

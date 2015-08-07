@@ -60,7 +60,7 @@ class Wheel:
         if isinstance(throttle, basestring):
             throttle = int(throttle)
         
-        if 0 <= throttle <= 100:
+        if 0 <= throttle <= 255:
             self.throttle = throttle
             
         else:

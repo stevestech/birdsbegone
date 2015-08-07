@@ -2,7 +2,7 @@ import socket
 import json
 
 class Networking:
-    def __init__(self, port, state):
+    def __init__(self, state, port=1234):
         self.running = True
         
         # Which port to connect to

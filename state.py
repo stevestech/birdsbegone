@@ -3,6 +3,7 @@ import json
 
 from wheel import Wheel
 from visionTrackingResult import VisionTrackingResult
+from ArduinoSPI import Commands
 
 class Modes:
     MANUAL = 0
@@ -58,3 +59,34 @@ class State:
         state["br-angle"] = self.backRightWheel.desiredAngle
         
         return json.dumps(state)
+        
+        
+    def getStateAsSPIMessage(self):
+        """
+        SPI commands are in the format
+        AxByyyCzzzzz
+        
+        x indicates the state        
+        x=0 neutral
+        x=1 braking
+        x=2 forward
+        x=3 reverse
+        
+        y is the throttle, between 0 and 255
+        
+        z is the wheel angle, between -1800 and 1800
+        
+        string.format is used to ensure that the numbers are padded with 
+        enough zeroes to maintain the format described above.
+        """
+        
+        state = Commands.SET_STATE
+        state = state + "{:01d}".format(self.frontLeftWheel.state)
+        
+        state = state + Commands.SET_THROTTLE
+        state = state + "{:03d}".format(self.frontLeftWheel.throttle)
+        
+        state = state + Commands.SET_ANGLE
+        state = state + "{:05d}".format(self.frontLeftWheel.desiredAngle)
+        
+        return state

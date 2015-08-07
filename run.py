@@ -5,16 +5,24 @@ import time
 
 from networking import Networking
 from state import State
+from ArduinoSPI import SPI
 
 state = State()
-networking = Networking(1234, state)
+networking = Networking(state)
+spi = SPI(state)
 
 networkThread = threading.Thread(target=networking.run)
+spiThread = threading.Thread(target=spi.run)
 
 
 def goodbye(signum, frame):
-    print("Network thread is stopping...")
+    spi.running = False
     networking.running = False
+
+    print("SPI thread is stopping...")
+    spiThread.join()
+    
+    print("Network thread is stopping...")
     networkThread.join()
     sys.exit(0)
 
@@ -29,6 +37,7 @@ for i in [x for x in dir(signal) if x.startswith("SIG")]:
 
         
 networkThread.start()
+spiThread.start()
 
 
 if __name__ == "__main__":

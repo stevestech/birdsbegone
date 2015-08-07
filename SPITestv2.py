@@ -17,7 +17,7 @@ def main():
 
     spi = spidev.SpiDev()
     spi.open(0,0)
-    spi.max_speed_hz=CLOCK_SPEED_HZ
+    #spi.max_speed_hz=CLOCK_SPEED_HZ
     
     angle = 22
     
@@ -51,11 +51,6 @@ def main():
         time.sleep(TIME_DELAY/1000000.0) # Delay
         angle = recieve_byte[0]
         print("Recieve1: "),
-        print angle
-        recieve_byte = spi.xfer2([0]) # Recieve the angle using final dummy data
-        time.sleep(TIME_DELAY/1000000.0) # Delay
-        angle = recieve_byte[0]
-        print("Recieve2: "),
         print angle
         
         GPIO.output(SLAVE_SELECT_PIN, 1) # set SS high
