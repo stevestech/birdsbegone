@@ -7,12 +7,12 @@
 
 #define DEBUG
 
-#define LENGTH_SPI_BUFFER               12
+#define LENGTH_SPI_BUFFER               13
 
 #define CHARS_THROTTLE                  3      // Within incoming messages, this many characters are allocated to the throttle parameter
 #define CHARS_STATE                     1
 #define CHARS_COMMAND                   1
-#define CHARS_ANGLE                     4
+#define CHARS_ANGLE                     5
 
 #define CHAR_ETX                        3      // ASCII code for ETX (end of text) character
 
@@ -30,9 +30,9 @@
 #define STATE_FORWARD                   '2'
 #define STATE_REVERSE                   '3'
 
-#define CMD_SET_STATE                   '0'
-#define CMD_SET_THROTTLE                '1'
-#define CMD_SET_ANGLE                   '2'
+#define CMD_SET_STATE                   'A'
+#define CMD_SET_THROTTLE                'B'
+#define CMD_SET_ANGLE                   'C'
 
 
 
@@ -72,9 +72,9 @@ void ss_falling ()
 
 /* 
  * Outputs a char array in the format "0007", for a value of 7
- * or "-015" for a value of -15, if LENGTH_ANGLE = 4.
+ * or "-015" for a value of -15, if CHARS_ANGLE = 4.
  * The last character in toSend will be set to ETX, not NULL.
- * The size of toSend will be LENGTH_ANGLE + 1 due to ETX
+ * The size of toSend will be CHARS_ANGLE + 1 due to ETX
  **/
 void intToCharArray(char *toSend, int value)
 {  
@@ -82,10 +82,10 @@ void intToCharArray(char *toSend, int value)
   int lowerLimit;
   int upperLimit;
   
-  // Example: "%04d" if LENGTH_ANGLE is 5
+  // Example: "%04d" if CHARS_ANGLE is 4
   sprintf(format, "%%0%dd", CHARS_ANGLE);  
   
-  // Does value fit into LENGTH_ANGLE chars?
+  // Does value fit into CHARS_ANGLE chars?
   lowerLimit = pow(10, CHARS_ANGLE - 1);
   lowerLimit *= -1;
   
@@ -163,10 +163,6 @@ ISR (SPI_STC_vect)
         recv_index = 0;
       }
     }
-        
-        
-    //Serial.print("Command recieved: ");
-    //Serial.println(command);
   break;
   
   // Command 16 recieve string
