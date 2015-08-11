@@ -1,4 +1,6 @@
 #include <SPI.h>
+#include <PID_v1.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,11 +21,28 @@
 #define CMD_RECEIVE                     16
 #define CMD_GET_ANGLE                   17
 
-#define THROTTLE_MAX                    255
+#define PWM_OUT_MAX                     255
+#define ANALOG_IN_MAX                   1023
 
-#define PIN_THROTTLE                    5      // D5
-#define PIN_BRAKE                       4      // D4
-#define PIN_REVERSE                     7      // D7
+#define BASE_10                         10
+
+// Hub motor pins
+#define PIN_HM_THROTTLE                 5      // D5 Timer0B
+#define PIN_HM_BRAKE                    4      // D4
+#define PIN_HM_REVERSE                  7      // D7
+#define PIN_HM_CURRENT_SENSE            0      // A0
+
+// Actuator pins
+#define PIN_A_THROTTLE                  6      // D6 Timer0A
+#define PIN_A_CLOCKWISE                 8      // D8
+#define PIN_A_ANTICLOCKWISE             9      // D9 Timer1A    
+#define PIN_A_CURRENT_SENSE             1      // A1
+#define PIN_A_POSITION_SENSE            2      // A2
+
+// Actuator PID gains
+#define GAIN_PROPORTIONAL               1
+#define GAIN_INTEGRAL                   0
+#define GAIN_DIFFERENTIAL               0
 
 #define STATE_NEUTRAL                   '0'
 #define STATE_BRAKING                   '1'
@@ -38,36 +57,44 @@
 
 
 
-char state = STATE_NEUTRAL;
+char hubMotorState;
 
 char char_throttle [CHARS_THROTTLE + 1];
 // Long because strtol returns a long
-long throttle = 0;
+long hubMotorThrottle;
 
 char char_angle [CHARS_ANGLE + 1];
-long angle = 0;
+double desiredActuatorAngle;
+double measuredActuatorAngle;
+double actuatorControllerOutput;
 
-char *ptr;
-
+PID actuatorController(
+  &measuredActuatorAngle,
+  &actuatorControllerOutput,
+  &desiredActuatorAngle,
+  GAIN_PROPORTIONAL,
+  GAIN_INTEGRAL,
+  GAIN_DIFFERENTIAL,
+  DIRECT);  
+  
 char send_buffer[LENGTH_SPI_BUFFER];
 volatile byte send_index;
 
-char recv_buffer[LENGTH_SPI_BUFFER];
 boolean recv_buffer_full;
+char recv_buffer[LENGTH_SPI_BUFFER];
 volatile byte recv_index;
 
 char loop_buffer[LENGTH_SPI_BUFFER];
 volatile byte loop_index;
 
 volatile boolean ignore_message;
-byte command = 0;
+byte command;
 
 // start of transaction, no command yet
 void ss_falling ()
 {
   command = 0;
 }  // end of interrupt service routine (ISR) ss_falling
-
 
 
 /* 
@@ -83,7 +110,7 @@ void intToCharArray(char *toSend, int value)
   int upperLimit;
   
   // Example: "%04d" if CHARS_ANGLE is 4
-  sprintf(format, "%%0%dd", CHARS_ANGLE);  
+  sprintf(format, "%%0%dd", CHARS_ANGLE);
   
   // Does value fit into CHARS_ANGLE chars?
   lowerLimit = pow(10, CHARS_ANGLE - 1);
@@ -100,26 +127,215 @@ void intToCharArray(char *toSend, int value)
   toSend[CHARS_ANGLE] = CHAR_ETX;
 }
 
+
+void processSPIMessage(void)
+{
+  memcpy(loop_buffer, recv_buffer, LENGTH_SPI_BUFFER);
+  recv_buffer_full = false;
+  loop_index = 0;
+  
+  #ifdef DEBUG
+    boolean etx_present = false;
+    byte x;
+    for (x=0; x < sizeof(loop_buffer); x++)
+    {
+      if (loop_buffer[x] == CHAR_ETX)
+      {
+        loop_buffer[x] = 0;
+        etx_present = true;
+      }
+    }
+    
+    Serial.println(loop_buffer);
+    if (etx_present) loop_buffer[x] = CHAR_ETX;
+  #endif
+  
+  while ((loop_index < sizeof(loop_buffer)) && (loop_buffer[loop_index] != CHAR_ETX))
+  {
+    char *ptr;
+    
+    switch (loop_buffer[loop_index])
+    {
+      case CMD_SET_STATE:
+        loop_index += CHARS_COMMAND;
+      
+        if ((loop_buffer[loop_index] == STATE_NEUTRAL)
+            || (loop_buffer[loop_index] == STATE_BRAKING)
+            || (loop_buffer[loop_index] == STATE_FORWARD)
+            || (loop_buffer[loop_index] == STATE_REVERSE))
+        {
+          hubMotorState = loop_buffer[loop_index];
+        }
+       
+        loop_index += CHARS_STATE;
+      break;
+      
+      case CMD_SET_THROTTLE:
+        loop_index += CHARS_COMMAND;
+        
+        memcpy(char_throttle, loop_buffer + loop_index, CHARS_THROTTLE);
+        // Append null terminator
+        char_throttle[CHARS_THROTTLE] = 0;
+        hubMotorThrottle = strtol(char_throttle, &ptr, BASE_10);
+        
+        loop_index += CHARS_THROTTLE;
+      break;
+      
+      case CMD_SET_ANGLE:
+        loop_index += CHARS_COMMAND;
+        
+        memcpy(char_angle, loop_buffer + loop_index, CHARS_ANGLE);
+        // Append null terminator
+        char_angle[CHARS_ANGLE] = 0;          
+        desiredActuatorAngle = strtod(char_angle, &ptr);
+        
+        loop_index += CHARS_ANGLE;
+      break;
+      
+      default:
+        loop_index += CHARS_COMMAND;
+      break;
+    }
+  }
+}  
+
+
+void updateHubMotor(void)
+{
+  switch (hubMotorState)
+  {
+    default:
+    case STATE_NEUTRAL:
+      analogWrite(PIN_HM_THROTTLE, 0);
+      digitalWrite(PIN_HM_BRAKE, HIGH);
+      digitalWrite(PIN_HM_REVERSE, HIGH);
+    break;
+    
+    case STATE_BRAKING:
+      analogWrite(PIN_HM_THROTTLE, 0);
+      digitalWrite(PIN_HM_BRAKE, LOW);
+      digitalWrite(PIN_HM_REVERSE, HIGH);
+    break;
+    
+    case STATE_FORWARD:
+      analogWrite(PIN_HM_THROTTLE, hubMotorThrottle);
+      digitalWrite(PIN_HM_BRAKE, HIGH);
+      digitalWrite(PIN_HM_REVERSE, HIGH);
+    break;
+    
+    case STATE_REVERSE:
+      analogWrite(PIN_HM_THROTTLE, hubMotorThrottle);
+      digitalWrite(PIN_HM_BRAKE, HIGH);
+      digitalWrite(PIN_HM_REVERSE, LOW);
+    break;
+  }
+}
+
+
+/* 
+ * Convert an analogue input signal (0-1023)
+ * to a PWM output signal (0-255), with direction (clockwise or anticlockwise)
+ **/
+void analogRangeToPwmRange(double *signal, boolean *clockwise)
+{
+    if (*signal > 1023)
+    {
+      *signal = 1023;
+    }
+    
+    else if (*signal < 0)
+    {
+      *signal = 0;
+    }
+    
+                                         // 0 - 1023
+    *signal *= PWM_OUT_MAX * 2;          // 0 - 521,730
+    *signal /= ANALOG_IN_MAX;            // 0 - 510
+    *signal -= PWM_OUT_MAX;              // -255 - 255
+    
+    if (*signal >= 0)
+    {
+      *clockwise = true;
+    }
+    
+    else
+    {
+      *signal *= -1;
+      *clockwise = false;
+    }
+}
+
+
+
+void updateActuator(void)
+{
+  boolean clockwise;
+  
+  if (desiredActuatorAngle != -1)
+  {
+    measuredActuatorAngle = analogRead(PIN_A_POSITION_SENSE);
+    actuatorController.Compute();
+    analogRangeToPwmRange(&actuatorControllerOutput, &clockwise);
+
+    if (clockwise)
+    {
+      digitalWrite(PIN_A_CLOCKWISE, HIGH);
+      digitalWrite(PIN_A_ANTICLOCKWISE, LOW);
+    }
+    
+    else
+    {
+      digitalWrite(PIN_A_CLOCKWISE, LOW);
+      digitalWrite(PIN_A_ANTICLOCKWISE, HIGH);
+    }
+    
+    analogWrite(PIN_A_THROTTLE, actuatorControllerOutput);
+    
+    #ifdef DEBUG
+      char message[100];
+      sprintf(message, "Controller signal: %.2f \tClockwise: %d \tMeasured: %.2f", actuatorControllerOutput, clockwise, measuredActuatorAngle); 
+      Serial.println(message);
+    #endif
+  }
+}
+    
+    
+    
+    
 void setup (void)
 {
-  Serial.begin (9600);
-  Serial.print("Start setup...");
-  // Have to send on MISO
-  pinMode(MISO, OUTPUT);
-  pinMode(PIN_THROTTLE, OUTPUT);
-  pinMode(PIN_BRAKE, OUTPUT);
-  pinMode(PIN_REVERSE, OUTPUT);
+  hubMotorState = STATE_NEUTRAL;
+  hubMotorThrottle = 0;
+  desiredActuatorAngle = -1;
+  command = 0;
   
-  analogWrite(PIN_THROTTLE, 0);
-  digitalWrite(PIN_BRAKE, HIGH);
-  digitalWrite(PIN_REVERSE, HIGH);
-
-  // Init Interrupt Vars
   send_index = 0;   // buffer empty
   recv_index = 0;
   loop_index = 0;
+  
   recv_buffer_full = false;
   ignore_message = false;
+  
+  Serial.begin (9600);
+  Serial.print("Start setup...");
+  
+  // Have to send on MISO
+  pinMode(MISO, OUTPUT);
+  pinMode(PIN_HM_THROTTLE, OUTPUT);
+  pinMode(PIN_HM_BRAKE, OUTPUT);
+  pinMode(PIN_HM_REVERSE, OUTPUT);
+  
+  pinMode(PIN_A_THROTTLE, OUTPUT);
+  pinMode(PIN_A_CLOCKWISE, OUTPUT);
+  pinMode(PIN_A_ANTICLOCKWISE, OUTPUT);
+  
+  analogWrite(PIN_HM_THROTTLE, 0);
+  digitalWrite(PIN_HM_BRAKE, HIGH);
+  digitalWrite(PIN_HM_REVERSE, HIGH);
+  
+  analogWrite(PIN_A_THROTTLE, 0);
+  digitalWrite(PIN_A_CLOCKWISE, LOW);
+  digitalWrite(PIN_A_ANTICLOCKWISE, LOW); 
   
   // turn on SPI in slave mode
   SPCR |= bit (SPE);
@@ -146,7 +362,7 @@ ISR (SPI_STC_vect)
     if (command == CMD_GET_ANGLE)
     {
       send_index = 0;
-      intToCharArray(send_buffer, -987);
+      intToCharArray(send_buffer, analogRead(PIN_A_POSITION_SENSE));
     }
     
     else if (command == CMD_RECEIVE)
@@ -214,108 +430,17 @@ ISR (SPI_STC_vect)
   } // end of switch
 }  // end of interrupt routine SPI_STC_vect
 
-void updateGPIO(void)
-{
-  switch (state)
-  {
-    default:
-    case STATE_NEUTRAL:
-      analogWrite(PIN_THROTTLE, 0);
-      digitalWrite(PIN_BRAKE, HIGH);
-      digitalWrite(PIN_REVERSE, HIGH);
-    break;
-    
-    case STATE_BRAKING:
-      analogWrite(PIN_THROTTLE, 0);
-      digitalWrite(PIN_BRAKE, LOW);
-      digitalWrite(PIN_REVERSE, HIGH);
-    break;
-    
-    case STATE_FORWARD:
-      analogWrite(PIN_THROTTLE, throttle);
-      digitalWrite(PIN_BRAKE, HIGH);
-      digitalWrite(PIN_REVERSE, HIGH);
-    break;
-    
-    case STATE_REVERSE:
-      analogWrite(PIN_THROTTLE, throttle);
-      digitalWrite(PIN_BRAKE, HIGH);
-      digitalWrite(PIN_REVERSE, LOW);
-    break;
-  }
-}
 
 // main loop - wait for flag set in interrupt routine
 void loop (void)
 { 
+  // If an SPI message has arrived, then process it
   if (recv_buffer_full)
   {
-    memcpy(loop_buffer, recv_buffer, LENGTH_SPI_BUFFER);
-    recv_buffer_full = false;
-    loop_index = 0;
-    
-    #ifdef DEBUG
-      boolean etx_present = false;
-      byte x;
-      for (x=0; x < sizeof(loop_buffer); x++)
-      {
-        if (loop_buffer[x] == CHAR_ETX)
-        {
-          loop_buffer[x] = 0;
-          etx_present = true;
-        }
-      }
-      
-      Serial.println(loop_buffer);
-      if (etx_present) loop_buffer[x] = CHAR_ETX;
-    #endif
-    
-    while ((loop_index < sizeof(loop_buffer)) && (loop_buffer[loop_index] != CHAR_ETX))
-    {
-      switch (loop_buffer[loop_index])
-      {
-        case CMD_SET_STATE:
-          loop_index += CHARS_COMMAND;
-        
-          if ((loop_buffer[loop_index] == STATE_NEUTRAL)
-              || (loop_buffer[loop_index] == STATE_BRAKING)
-              || (loop_buffer[loop_index] == STATE_FORWARD)
-              || (loop_buffer[loop_index] == STATE_REVERSE))
-          {
-            state = loop_buffer[loop_index];
-          }
-         
-          loop_index += CHARS_STATE;
-        break;
-        
-        case CMD_SET_THROTTLE:
-          loop_index += CHARS_COMMAND;
-          
-          memcpy(char_throttle, loop_buffer + loop_index, CHARS_THROTTLE);
-          char_throttle[CHARS_THROTTLE] = 0;
-          throttle = strtol(char_throttle, &ptr, 10);
-          
-          loop_index += CHARS_THROTTLE;
-        break;
-        
-        case CMD_SET_ANGLE:
-          loop_index += CHARS_COMMAND;
-          
-          memcpy(char_angle, loop_buffer + loop_index, CHARS_ANGLE);
-          char_angle[CHARS_ANGLE] = 0;          
-          angle = strtol(char_angle, &ptr, 10);
-          
-          loop_index += CHARS_ANGLE;
-        break;
-        
-        default:
-          loop_index += CHARS_COMMAND;
-        break;
-      }
-    }
-    
-    updateGPIO();
-    
-  }  // end of flag set
+    processSPIMessage();
+  }
+  
+  updateHubMotor();
+  updateActuator(); 
 
 }  // end of loop
