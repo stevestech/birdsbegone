@@ -135,7 +135,7 @@ void processSPIMessage(void)
   loop_index = 0;
   
   #ifdef DEBUG
-    boolean etx_present = false;
+/*  boolean etx_present = false;
     byte x;
     for (x=0; x < sizeof(loop_buffer); x++)
     {
@@ -148,6 +148,7 @@ void processSPIMessage(void)
     
     Serial.println(loop_buffer);
     if (etx_present) loop_buffer[x] = CHAR_ETX;
+*/
   #endif
   
   while ((loop_index < sizeof(loop_buffer)) && (loop_buffer[loop_index] != CHAR_ETX))
@@ -232,49 +233,14 @@ void updateHubMotor(void)
 }
 
 
-/* 
- * Convert an analogue input signal (0-1023)
- * to a PWM output signal (0-255), with direction (clockwise or anticlockwise)
- **/
-void analogRangeToPwmRange(double *signal, boolean *clockwise)
-{
-    if (*signal > 1023)
-    {
-      *signal = 1023;
-    }
-    
-    else if (*signal < 0)
-    {
-      *signal = 0;
-    }
-    
-                                         // 0 - 1023
-    *signal *= PWM_OUT_MAX * 2;          // 0 - 521,730
-    *signal /= ANALOG_IN_MAX;            // 0 - 510
-    *signal -= PWM_OUT_MAX;              // -255 - 255
-    
-    if (*signal >= 0)
-    {
-      *clockwise = true;
-    }
-    
-    else
-    {
-      *signal *= -1;
-      *clockwise = false;
-    }
-}
-
-
-
 void updateActuator(void)
 {
-  boolean clockwise;
-  
   if (desiredActuatorAngle != -1)
   {
     measuredActuatorAngle = analogRead(PIN_A_POSITION_SENSE);
     actuatorController.Compute();
+    
+    /*
     analogRangeToPwmRange(&actuatorControllerOutput, &clockwise);
 
     if (clockwise)
@@ -291,9 +257,11 @@ void updateActuator(void)
     
     analogWrite(PIN_A_THROTTLE, actuatorControllerOutput);
     
+    */
+    
     #ifdef DEBUG
       char message[100];
-      sprintf(message, "Controller signal: %.2f \tClockwise: %d \tMeasured: %.2f", actuatorControllerOutput, clockwise, measuredActuatorAngle); 
+      sprintf(message, "IN %d  OUT %d  SETPOINT %d", (int)measuredActuatorAngle, (int)actuatorControllerOutput, (int)desiredActuatorAngle);
       Serial.println(message);
     #endif
   }
@@ -316,7 +284,7 @@ void setup (void)
   recv_buffer_full = false;
   ignore_message = false;
   
-  Serial.begin (9600);
+  Serial.begin(9600);
   Serial.print("Start setup...");
   
   // Have to send on MISO
@@ -336,6 +304,8 @@ void setup (void)
   analogWrite(PIN_A_THROTTLE, 0);
   digitalWrite(PIN_A_CLOCKWISE, LOW);
   digitalWrite(PIN_A_ANTICLOCKWISE, LOW); 
+  
+  actuatorController.SetMode(AUTOMATIC);
   
   // turn on SPI in slave mode
   SPCR |= bit (SPE);
