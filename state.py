@@ -2,8 +2,8 @@ import threading
 import json
 
 from wheel import Wheel
+from wheel import Channels
 from visionTrackingResult import VisionTrackingResult
-from ArduinoSPI import Commands
 
 class Modes:
     MANUAL = 0
@@ -26,6 +26,22 @@ class State:
         self.backVisionResult = VisionTrackingResult()
         
         
+    def getWheel(self, channel):
+        if channel == Channels.FRONT_LEFT:
+            return self.frontLeftWheel
+            
+        if channel == Channels.FRONT_RIGHT:
+            return self.frontRightWheel
+            
+        if channel == Channels.BACK_LEFT:
+            return self.backLeftWheel
+            
+        if channel == Channels.BACK_RIGHT:
+            return self.backRightWheel
+            
+        raise ValueError('Invalid channel sent to State.getWheel(): ' + str(channel))
+    
+    
     def getModeAsString(self):
         if self.mode == Modes.MANUAL:
             return "manual"
@@ -45,48 +61,20 @@ class State:
         state["fl-state"] = self.frontLeftWheel.getStateAsString()
         state["fl-throttle"] = self.frontLeftWheel.throttle
         state["fl-angle"] = self.frontLeftWheel.desiredAngle
+        state["fl-angle-pot"] = self.frontLeftWheel.measuredAngle
+        state["fl-actuator"] = self.frontLeftWheel.actuator
         
-        state["fr-state"] = self.frontRightWheel.getStateAsString()
-        state["fr-throttle"] = self.frontRightWheel.throttle
-        state["fr-angle"] = self.frontRightWheel.desiredAngle
+        #state["fr-state"] = self.frontRightWheel.getStateAsString()
+        #state["fr-throttle"] = self.frontRightWheel.throttle
+        #state["fr-angle"] = self.frontRightWheel.desiredAngle
+        #state["fr-current"] = self.frontRightWheel.measuredCurrent
         
-        state["bl-state"] = self.backLeftWheel.getStateAsString()
-        state["bl-throttle"] = self.backLeftWheel.throttle
-        state["bl-angle"] = self.backLeftWheel.desiredAngle
+        #state["bl-state"] = self.backLeftWheel.getStateAsString()
+        #state["bl-throttle"] = self.backLeftWheel.throttle
+        #state["bl-angle"] = self.backLeftWheel.desiredAngle
         
-        state["br-state"] = self.backRightWheel.getStateAsString()
-        state["br-throttle"] = self.backRightWheel.throttle
-        state["br-angle"] = self.backRightWheel.desiredAngle
+        #state["br-state"] = self.backRightWheel.getStateAsString()
+        #state["br-throttle"] = self.backRightWheel.throttle
+        #state["br-angle"] = self.backRightWheel.desiredAngle
         
         return json.dumps(state)
-        
-        
-    def getStateAsSPIMessage(self):
-        """
-        SPI commands are in the format
-        AxByyyCzzzzz
-        
-        x indicates the state        
-        x=0 neutral
-        x=1 braking
-        x=2 forward
-        x=3 reverse
-        
-        y is the throttle, between 0 and 255
-        
-        z is the wheel angle, between -1800 and 1800
-        
-        string.format is used to ensure that the numbers are padded with 
-        enough zeroes to maintain the format described above.
-        """
-        
-        state = Commands.SET_STATE
-        state = state + "{:01d}".format(self.frontLeftWheel.state)
-        
-        state = state + Commands.SET_THROTTLE
-        state = state + "{:03d}".format(self.frontLeftWheel.throttle)
-        
-        state = state + Commands.SET_ANGLE
-        state = state + "{:05d}".format(self.frontLeftWheel.desiredAngle)
-        
-        return state

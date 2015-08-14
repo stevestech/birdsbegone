@@ -1,3 +1,7 @@
+// Global to keep track of whether the status is hidden
+var statusDisplayed = true;
+var updateDelayTimer;
+
 // This function can be used to determine when the page has finished
 // updating after a resize event.
 var waitForFinalEvent = (function () {
@@ -13,10 +17,6 @@ var waitForFinalEvent = (function () {
   };
 })();
 
-
-
-// Global to keep track of whether the status is hidden
-var statusDisplayed = true;
 
 function setStatus(show, message) {
 	if (show && statusDisplayed) {
@@ -66,11 +66,30 @@ function updateControls(data) {
 
 	$("#throttle .slider").slider("value", data["fl-throttle"]);
 	$("#fl-angle .slider").slider("value", data["fl-angle"]);
+	
+	$("#fl-angle-pot .value").text(data["fl-angle-pot"]);
+	$("#fl-angle-pot .bar").progressbar("value", data["fl-angle-pot"]);
+	
+	$("#fl-actuator .value").text(data["fl-actuator"]);
+	$("#fl-actuator .bar").progressbar("value", data["fl-actuator"] + 255);
+}
+
+
+function delayedUpdate(ms) {
+	clearTimeout(updateDelayTimer);
+	
+	updateDelayTimer = setTimeout(function() {
+		sendCommand({
+			cmd: "update"
+		});
+	}, ms);
 }
 
 // Sends a command to the supervisor, and parses the response. Also
 // displays any errors that are encountered.
 function sendCommand(commands) {
+	clearTimeout(updateDelayTimer);
+	
 	$.ajax({
 		url: "/cgi-bin/command.cgi",
 		data: commands,
@@ -79,17 +98,20 @@ function sendCommand(commands) {
 				
 			if ("error" in data) {
 				setStatus(true, data["error"]);
+				delayedUpdate(10000);
 			}
 			
 			else {
 				setStatus(false);
-				updateControls(data);		
+				updateControls(data);
+				delayedUpdate(1000);
 			}
 			
 		},
 		
 		error: function(jqHXR, status, error) {	
 			setStatus(true, "Something went wrong with the command.cgi script.");
+			delayedUpdate(10000);
 		}
 	});
 }	
@@ -115,10 +137,19 @@ $(function() {
 	
 	$("#fl-angle .slider").slider({
 		value: 0,
-		min: -360,
-		max: 360,
-		step: 15,
+		min: 0,
+		max: 1023,
 		animate: "slow"
+	});
+	
+	$("#fl-angle-pot .bar").progressbar({
+		value: 0,
+		max: 1023
+	});
+	
+	$("#fl-actuator .bar").progressbar({
+		value: 0,
+		max: 510
 	});
 });
 
@@ -257,11 +288,15 @@ $(function() {
 // Set width of sliders based on width of existing elements
 function sizeSliders() {
 	var width = $("#throttle").width();
-	width -= 380;
-	width = width + "px";
+
+	var sliderWidth = width - 380;
+	sliderWidth = sliderWidth + "px";
 	
-	$("#throttle .slider").css("width", width);
-	$("#fl-angle .slider").css("width", width);
+	var progressBarWidth = width - 185;
+	progressBarWidth = progressBarWidth + "px";
+	
+	$(".slider").css("width", sliderWidth);
+	$(".bar").css("width", progressBarWidth);
 }
 
 $(window).on("load", function() {
@@ -270,9 +305,7 @@ $(window).on("load", function() {
 	// update isn't a registered command on the supervisor, but this
 	// will still result in the supervisor sending the state to the
 	// web client, it does so for all commands.
-	sendCommand({
-		cmd: "update"
-	});
+	sendCommand({ cmd: "update" });
 });
 
 $(window).on("resize", function() {

@@ -109,12 +109,67 @@ body {
 	display: inline-block;
 	margin-left: 20px;
 	top: 2px;
-	/* Width is calculated in JavaScript */
 }
 
 #fl-angle .increase {
 	display: inline-block;
 	margin-left: 20px;
+}
+
+
+
+
+#fl-angle-pot {
+	margin-top: 25px;
+}
+
+#fl-angle-pot .label {
+	display: inline-block;
+	position: relative;
+	bottom: 10px;
+	width: 100px;
+}
+
+#fl-angle-pot .value {
+	display: inline-block;
+	margin-left: 5px;
+	position: relative;
+	bottom: 10px;
+	width: 13px;
+}
+
+#fl-angle-pot .bar {
+	display: inline-block;
+	margin-left: 30px;
+	/* Width is calculated in JavaScript */
+}
+
+
+
+
+#fl-actuator {
+	margin-top: 25px;
+}
+
+#fl-actuator .label {
+	display: inline-block;
+	position: relative;
+	bottom: 10px;
+	width: 100px;
+}
+
+#fl-actuator .value {
+	display: inline-block;
+	margin-left: 5px;
+	position: relative;
+	bottom: 10px;
+	width: 13px;
+}
+
+#fl-actuator .bar {
+	display: inline-block;
+	margin-left: 30px;
+	/* Width is calculated in JavaScript */
 }
 
 

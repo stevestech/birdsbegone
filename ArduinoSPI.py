@@ -3,11 +3,16 @@ import spidev
 import time
 import RPi.GPIO as GPIO
 
+import wheel
+
 
 class Commands:
     SET_STATE = 'A'
     SET_THROTTLE = 'B'
     SET_ANGLE = 'C'
+    
+    GET_MEASURED_ANGLE = 17
+    GET_ACTUATOR = 18
 
 
 class SPI:
@@ -30,6 +35,7 @@ class SPI:
 
         self.spi = spidev.SpiDev()
         self.spi.open(0,0)
+        
     
     
     def sendString(self, string):
@@ -61,7 +67,6 @@ class SPI:
         while (recieve_byte[0] !=  3): # 3 = ETX (End of Text) to signify recieving finished 
             recieve_byte = self.transferByteAndWait(0) # Recieve a byte from the slave
             recieved_list.append(chr(recieve_byte[0])) # Append the character to the list
-            print recieve_byte
             if (len(recieved_list) >= 10): # If don't recieve end of text, break
                 recieved_list = []
                 break
@@ -89,13 +94,41 @@ class SPI:
         time.sleep(self.spi_delay/1000000.0)
         return recieve_byte
         
+    
+    def readArduinoState(self, channel):
+        try:
+            angle = int(self.recieveString(Commands.GET_MEASURED_ANGLE))
+            actuator = int(self.recieveString(Commands.GET_ACTUATOR))
+            
+        except ValueError:
+            # SPI did not return the expected value / is not online
+            return False
+            
+        else:
+            with self.state.lock:
+                wheel = self.state.getWheel(channel)
+                wheel.measuredAngle = angle
+                wheel.actuator = actuator
+                
+            return True
+                
+        
     def run(self):
+        # Wait until SPI is online and then set the current wheel position
+        # as the wheel angle setpoint.
+        
+        while not self.readArduinoState(wheel.Channels.FRONT_LEFT):
+            pass
+            
+        with self.state.lock:
+            self.state.frontLeftWheel.desiredAngle = self.state.frontLeftWheel.measuredAngle
+            
+        
         while self.running:
             # No time.sleep() needed as we have spi_delay
-            self.sendString(self.state.getStateAsSPIMessage())
-
-
-
+            self.sendString(self.state.frontLeftWheel.getStateAsSPIMessage())
+            self.readArduinoState(wheel.Channels.FRONT_LEFT)
+                        
 
 """
 def main():

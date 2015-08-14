@@ -34,6 +34,7 @@ while True:
 	except socket.error:
 		print("Content-type: text/html\r\n\r\n")
 		print(json.dumps({"error": "The robot supervisor program is not running."}))
+		s.close()
 		sys.exit(0)
 		
 	s.settimeout(2)
@@ -42,7 +43,6 @@ while True:
 	# Receive state from the supervisor
 	try:
 		message = s.recv(bufferSize)
-		s.close()
 		
 	except socket.timeout:
 		continue
@@ -50,6 +50,6 @@ while True:
 	if message.startswith("{") and message.endswith("}"):
 		break
 	
-
+s.close()
 print("Content-type: text/html\r\n\r\n")
 print(message)
