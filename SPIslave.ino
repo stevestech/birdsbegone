@@ -7,7 +7,7 @@
 #include <math.h>
 #include <limits.h>
 
-#define DEBUG
+//#define DEBUG_SPI
 
 #define LENGTH_SPI_BUFFER               13
 
@@ -20,6 +20,7 @@
 
 #define CMD_RECEIVE                     16
 #define CMD_GET_ANGLE                   17
+#define CMD_GET_ACTUATOR                18
 
 #define PWM_OUT_MAX                     255
 #define ANALOG_IN_MAX                   1023
@@ -30,14 +31,13 @@
 #define PIN_HM_THROTTLE                 5      // D5 Timer0B
 #define PIN_HM_BRAKE                    4      // D4
 #define PIN_HM_REVERSE                  7      // D7
-#define PIN_HM_CURRENT_SENSE            0      // A0
 
 // Actuator pins
 #define PIN_A_THROTTLE                  6      // D6 Timer0A
 #define PIN_A_CLOCKWISE                 8      // D8
 #define PIN_A_ANTICLOCKWISE             9      // D9 Timer1A    
 #define PIN_A_CURRENT_SENSE             1      // A1
-#define PIN_A_POSITION_SENSE            2      // A2
+#define PIN_A_POSITION_SENSE            0      // A2
 
 // Actuator PID gains
 #define GAIN_PROPORTIONAL               1
@@ -88,6 +88,7 @@ char loop_buffer[LENGTH_SPI_BUFFER];
 volatile byte loop_index;
 
 volatile boolean ignore_message;
+boolean init_complete;
 byte command;
 
 // start of transaction, no command yet
@@ -134,8 +135,8 @@ void processSPIMessage(void)
   recv_buffer_full = false;
   loop_index = 0;
   
-  #ifdef DEBUG
-/*  boolean etx_present = false;
+  #ifdef DEBUG_SPI
+    boolean etx_present = false;
     byte x;
     for (x=0; x < sizeof(loop_buffer); x++)
     {
@@ -148,7 +149,6 @@ void processSPIMessage(void)
     
     Serial.println(loop_buffer);
     if (etx_present) loop_buffer[x] = CHAR_ETX;
-*/
   #endif
   
   while ((loop_index < sizeof(loop_buffer)) && (loop_buffer[loop_index] != CHAR_ETX))
@@ -191,7 +191,7 @@ void processSPIMessage(void)
         desiredActuatorAngle = strtod(char_angle, &ptr);
         
         loop_index += CHARS_ANGLE;
-      break;
+      break;      
       
       default:
         loop_index += CHARS_COMMAND;
@@ -240,10 +240,7 @@ void updateActuator(void)
     measuredActuatorAngle = analogRead(PIN_A_POSITION_SENSE);
     actuatorController.Compute();
     
-    /*
-    analogRangeToPwmRange(&actuatorControllerOutput, &clockwise);
-
-    if (clockwise)
+    if (actuatorControllerOutput >= 0)
     {
       digitalWrite(PIN_A_CLOCKWISE, HIGH);
       digitalWrite(PIN_A_ANTICLOCKWISE, LOW);
@@ -255,15 +252,7 @@ void updateActuator(void)
       digitalWrite(PIN_A_ANTICLOCKWISE, HIGH);
     }
     
-    analogWrite(PIN_A_THROTTLE, actuatorControllerOutput);
-    
-    */
-    
-    #ifdef DEBUG
-      char message[100];
-      sprintf(message, "IN %d  OUT %d  SETPOINT %d", (int)measuredActuatorAngle, (int)actuatorControllerOutput, (int)desiredActuatorAngle);
-      Serial.println(message);
-    #endif
+    analogWrite(PIN_A_THROTTLE, (int)actuatorControllerOutput);
   }
 }
     
@@ -283,6 +272,7 @@ void setup (void)
   
   recv_buffer_full = false;
   ignore_message = false;
+  init_complete = false;
   
   Serial.begin(9600);
   Serial.print("Start setup...");
@@ -306,6 +296,7 @@ void setup (void)
   digitalWrite(PIN_A_ANTICLOCKWISE, LOW); 
   
   actuatorController.SetMode(AUTOMATIC);
+  actuatorController.SetOutputLimits(PWM_OUT_MAX * -1, PWM_OUT_MAX);
   
   // turn on SPI in slave mode
   SPCR |= bit (SPE);
@@ -318,6 +309,24 @@ void setup (void)
 }
 
 
+void sendNextByteInBuffer(void)
+{
+  byte c;
+  
+  if (send_index < sizeof(send_buffer))
+  {
+    c = send_buffer[send_index++];
+  }
+  
+  else
+  {
+    c = CHAR_ETX;
+  }
+
+  SPDR = c;
+}
+
+
 // SPI interrupt routine
 ISR (SPI_STC_vect)
 {
@@ -327,15 +336,14 @@ ISR (SPI_STC_vect)
   // If command is zero, then incoming byte is a command
   case 0:
     command = c;
-    SPDR = 0;
-    
-    if (command == CMD_GET_ANGLE)
-    {
-      send_index = 0;
-      intToCharArray(send_buffer, analogRead(PIN_A_POSITION_SENSE));
-    }
-    
-    else if (command == CMD_RECEIVE)
+    init_complete = false;
+    SPDR = 0;    
+  break;
+  
+  // Command 16 recieve string
+  case CMD_RECEIVE:
+    // Initialisation!
+    if (!init_complete)
     {
       // If recv_buffer is not empty, then we should wait before filling it with a new message
       if (recv_buffer_full)
@@ -348,11 +356,10 @@ ISR (SPI_STC_vect)
         ignore_message = false;
         recv_index = 0;
       }
+      
+      init_complete = true;
     }
-  break;
   
-  // Command 16 recieve string
-  case CMD_RECEIVE:
     if (ignore_message)
       break;
   
@@ -384,18 +391,29 @@ ISR (SPI_STC_vect)
     
   // Return angle on request
   case CMD_GET_ANGLE:
-    if (send_index < sizeof(send_buffer))
+    // Initialisation!
+    if (!init_complete)
     {
-      c = send_buffer[send_index++];
+      send_index = 0;
+      intToCharArray(send_buffer, analogRead(PIN_A_POSITION_SENSE));
+      init_complete = true;
     }
-    
-    else
-    {
-      c = CHAR_ETX;
-    }
-    
-    SPDR = c;
+  
+    sendNextByteInBuffer();
   break;
+  
+  // Return actuator signal on request
+  case CMD_GET_ACTUATOR:
+    // Initialisation!
+    if (!init_complete)
+    {
+      send_index = 0;
+      intToCharArray(send_buffer, (int)actuatorControllerOutput);
+      init_complete = true;
+    }
+  
+    sendNextByteInBuffer();
+  break;  
   
   } // end of switch
 }  // end of interrupt routine SPI_STC_vect
@@ -403,7 +421,7 @@ ISR (SPI_STC_vect)
 
 // main loop - wait for flag set in interrupt routine
 void loop (void)
-{ 
+{  
   // If an SPI message has arrived, then process it
   if (recv_buffer_full)
   {
@@ -411,6 +429,6 @@ void loop (void)
   }
   
   updateHubMotor();
-  updateActuator(); 
+  updateActuator();
 
 }  // end of loop
