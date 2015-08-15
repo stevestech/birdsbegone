@@ -24,7 +24,7 @@ class Camera:
             except picamera.exc.PiCameraMMALError:
                 time.sleep(10)
                 
-        self.camera.resolution = (320, 240)
+        self.camera.resolution = (640, 480)
         self.camera.framerate = 2
         
         # allow camera to warmup

@@ -23,7 +23,7 @@ def goodbye(signum, frame):
     networking.running = False
     camera.running = False
 
-    print("SPI thread is stopping...")
+    print("\nSPI thread is stopping...")
     spiThread.join()
     
     print("Camera thread is stopping...")
