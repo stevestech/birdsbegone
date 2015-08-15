@@ -33,6 +33,15 @@ body {
 
 
 
+#tabs a {
+	/* Make the tabs wide enough to click on a mobile */
+	font-size: 1.5em;
+}
+	
+
+
+
+
 
 #throttle {
 	/* Moves the throttle slider and all associated elements */
