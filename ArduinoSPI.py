@@ -14,29 +14,29 @@ class Commands:
 
 
 class SPI:
-    def __init__(self, state, ss_pin_list, spi_delay=1000):
+    def __init__(self, state, ss_pin_list=[25, 20, 26, 19], spi_delay=1000):
         """
         Handle SPI communication with a slave
         Note the slave must be programmed in a specific way to work with this code
         """
         self.running = True
-	self.recieve_text_limit = 10
-		
+        self.recieve_text_limit = 10
+  
         self.state = state
         
-		
+  
         self.ss_pin_list = ss_pin_list # Slave Select Pin
         self.spi_delay = spi_delay # SPI delay between transfers (us)
         
-	GPIO.cleanup()
-	GPIO.setmode(GPIO.BCM)
-		
-	for ss_pin in ss_pin_list:
-		GPIO.setup(ss_pin, GPIO.OUT) # set SS pin as an output
-		GPIO.output(ss_pin, 1) # set SS pin to high
+        GPIO.cleanup()
+        GPIO.setmode(GPIO.BCM)
+  
+        for ss_pin in ss_pin_list:
+            GPIO.setup(ss_pin, GPIO.OUT) # set SS pin as an output
+            GPIO.output(ss_pin, 1) # set SS pin to high
 
-        self.spi = spidev.SpiDev()
-        self.spi.open(0,0)
+            self.spi = spidev.SpiDev()
+            self.spi.open(0,0)
         
     
     
@@ -45,7 +45,7 @@ class SPI:
         Sends a string across to a SPI slave
         String length currently limited to length of 12, can modify on slave.
         """
-	ss_pin = self.ss_pin_list[ss_pin_list_index]
+        ss_pin = self.ss_pin_list[ss_pin_list_index]
         send_list = list(string)
         send_list = send_list[:12]
         send_list.append(chr(3)) # 3 = ETX (End of Text) to signify string finished 
@@ -62,7 +62,7 @@ class SPI:
         The slave must have the string ready to send in a buffer
         When the slave receives the correct command returns the corresponding string
         """
-	ss_pin = self.ss_pin_list[ss_pin_list_index]
+        ss_pin = self.ss_pin_list[ss_pin_list_index]
         recieve_byte = [0]
         recieved_list = []
         GPIO.output(ss_pin, 0) # set SS low
@@ -144,5 +144,5 @@ def main():
         return_str = arduinoSPI.recieveString(17) # Retrieve string stored in command 17
         print return_str
 if __name__ == '__main__':
-	main()
+ main()
 """
