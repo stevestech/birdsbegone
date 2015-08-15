@@ -85,8 +85,8 @@ function updateControls(data) {
 
 	// Sliders should not broadcast this value change back to the
 	// supervisor, or a looping mess of sockets would result
-	$("#throttle .slider").addClass("updated");
-	$("#fl-angle .slider").addClass("updated");
+	$("#throttle .slider").addClass("do-not-broadcast");
+	$("#fl-angle .slider").addClass("do-not-broadcast");
 
 	$("#throttle .slider").slider("value", data["fl-throttle"]);
 	$("#fl-angle .slider").slider("value", data["fl-angle"]);
