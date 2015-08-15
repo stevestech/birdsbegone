@@ -118,9 +118,7 @@ function sendCommand(commands) {
 
 // Hook jquery-ui onto the appropriate elements
 $(function() {
-	$("#manual").accordion({
-		heightStyle: "content"
-	});
+	$("#tabs").tabs();
 	
 	$("button").button();
 	
