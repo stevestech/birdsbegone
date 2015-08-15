@@ -15,13 +15,12 @@ var waitForFinalEvent = (function () {
 
 
 
-
 var updateStateTimer;
 
 // Regularly loads state information from the supervisor.
 // Once the update has been completed succesfully, sendCommand() will
 // call this method again.
-function waitThenUpdateState(ms) {
+function updateState(ms) {
 	clearTimeout(updateStateTimer);
 	
 	updateStateTimer = setTimeout(function() {
@@ -31,24 +30,21 @@ function waitThenUpdateState(ms) {
 	}, ms);
 }
 
-function clearStateUpdateTimers() {
+function clearStateUpdateTimer() {
 	clearTimeout(updateStateTimer);
 }
 
 
 
-var updateCameraTimer;
+
+var enableCameraUpdates = false;
 var cameraID = 1;
 
-function waitThenUpdateCamera() {
-	// This method has already been called, cancel any existing timers
-	// that might call it again.
-	clearTimeout(updateCameraTimer);
-	
+function updateCameras() {
 	var date = new Date();
 	var image = new Image();
 	
-	// Appending # to the URL prevents browsers from using cached content,
+	// Appending # to the URL prevents browsers from fetching cached content,
 	// and ensures an updated image
 	var imageSrc = "cameras/camera" + cameraID + ".jpg#" + date.getTime();
 	var imageTarget = "#camera" + cameraID;
@@ -62,12 +58,27 @@ function waitThenUpdateCamera() {
 	// After image has completed loading, schedule the next update.
 	image.onload = function() {
 		$(imageTarget).attr("src", this.src);
-		updateCameraTimer = setTimeout(waitThenUpdateCamera, 1000);
+		
+		if (updateCameras) {
+			// By not calling the function directly, we avoid infinite
+			// recursion, and possibly a stack overflow.
+			setTimeout(updateCameras, 1);
+		}
 	};
 	
 	image.src = imageSrc;
 }
 
-function clearCameraUpdateTimers() {
-	clearTimeout(updateCameraTimer);
+
+// Add some logic so that it is not possible to have multiple updates
+// occuring simultaneously.
+function startUpdatingCameras() {
+	if (!enableCameraUpdates) {
+		enableCameraUpdates = true;
+		updateCameras();
+	}
+}
+
+function stopUpdatingCameras() {
+	enableCameraUpdates = false;
 }

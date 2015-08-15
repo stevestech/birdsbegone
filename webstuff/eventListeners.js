@@ -1,10 +1,6 @@
 $(window).on("load", function() {
 	updateControlsWidth();
-	
-	// update isn't a registered command on the supervisor, but this
-	// will still result in the supervisor sending the state to the
-	// web client, it does so for all commands.
-	sendCommand({ cmd: "update" });
+	updateState(1);
 });
 
 
@@ -38,30 +34,20 @@ $(function() {
 	
 	// Switch between interface tabs
 	$("#tabs").on("tabsactivate", function(event, ui) {
+		// Perform initialisation tasks for the newly selected tab
 		switch(ui.newTab.text()) {
-			// Start updating cameras
 			case "Cameras":
-				waitThenUpdateCamera();
-			break;
-			
-			// Start updating state
-			case "Testing":
-				waitThenUpdateState();
+				startUpdatingCameras();
 			break;
 			
 			default:
 			break;
 		}
 		
+		// Perform cleanup for the previous tab
 		switch(ui.oldTab.text()) {
-			// Stop updating cameras
 			case "Cameras":
-				clearCameraUpdateTimers();
-			break;
-			
-			// Stop updating state
-			case "Testing":
-				clearStateUpdateTimers();
+				stopUpdatingCameras();
 			break;
 			
 			default:
@@ -87,8 +73,8 @@ $(function() {
 		$("#throttle .value").text(ui.value);
 		
 		// Should we broadcast this value change to the supervisor?
-		if ($("#throttle .slider").hasClass("do-not-broadcast")) {
-			$("#throttle .slider").removeClass("do-not-broadcast");
+		if ($("#throttle .slider").hasClass("updated")) {
+			$("#throttle .slider").removeClass("updated");
 		}
 		
 		else {		
@@ -137,8 +123,8 @@ $(function() {
 		$("#fl-angle .value").text(ui.value + "°");
 		
 		// Should we broadcast this value change to the supervisor?
-		if ($("#fl-angle .slider").hasClass("do-not-broadcast")) {
-			$("#fl-angle .slider").removeClass("do-not-broadcast");
+		if ($("#fl-angle .slider").hasClass("updated")) {
+			$("#fl-angle .slider").removeClass("updated");
 		}
 		
 		else {

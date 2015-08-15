@@ -85,8 +85,8 @@ function updateControls(data) {
 
 	// Sliders should not broadcast this value change back to the
 	// supervisor, or a looping mess of sockets would result
-	$("#throttle .slider").addClass("do-not-broadcast");
-	$("#fl-angle .slider").addClass("do-not-broadcast");
+	$("#throttle .slider").addClass("updated");
+	$("#fl-angle .slider").addClass("updated");
 
 	$("#throttle .slider").slider("value", data["fl-throttle"]);
 	$("#fl-angle .slider").slider("value", data["fl-angle"]);
@@ -108,10 +108,8 @@ function updateCameras() {
 // Sends a command to the supervisor, and parses the response. Also
 // displays any errors that are encountered.
 function sendCommand(commands) {
-	// This method is already being called, so there is no need for any timers
-	// to call it again. A new timer will be generated after the this method
-	// finishes communicating with the supervisor.
-	clearStateUpdateTimers();
+	// Prevents more than one state update being scheduled.
+	clearStateUpdateTimer();
 	
 	$.ajax({
 		url: "/cgi-bin/command.cgi",
@@ -121,20 +119,20 @@ function sendCommand(commands) {
 				
 			if ("error" in data) {
 				setStatus(true, data["error"]);
-				waitThenUpdateState(10000);
+				updateState(10000);
 			}
 			
 			else {
 				setStatus(false);
 				updateControls(data);
-				waitThenUpdateState(1000);
+				updateState(1000);
 			}
 			
 		},
 		
 		error: function(jqHXR, status, error) {	
 			setStatus(true, "Something went wrong with the command.cgi script.");
-			waitThenUpdateState(10000);
+			updateState(10000);
 		}
 	});
 }	

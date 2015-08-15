@@ -6,25 +6,28 @@ import time
 from networking import Networking
 from state import State
 from ArduinoSPI import SPI
-#from cameraCapture import Camera
+from cameraCapture import Camera
 
 state = State()
 networking = Networking(state)
 spi = SPI(state)
-#camera = Camera()
+camera = Camera(state)
 
 networkThread = threading.Thread(target=networking.run)
 spiThread = threading.Thread(target=spi.run)
-#cameraThread = threading.Thread(target=camera.run)
-#cameraThread.daemon = True
+cameraThread = threading.Thread(target=camera.run)
 
 
 def goodbye(signum, frame):
     spi.running = False
     networking.running = False
+    camera.running = False
 
     print("SPI thread is stopping...")
     spiThread.join()
+    
+    print("Camera thread is stopping...")
+    cameraThread.join()
     
     print("Network thread is stopping...")
     networkThread.join()
@@ -42,7 +45,7 @@ for i in [x for x in dir(signal) if x.startswith("SIG")]:
         
 networkThread.start()
 spiThread.start()
-#cameraThread.start()
+cameraThread.start()
 
 
 if __name__ == "__main__":
