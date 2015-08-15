@@ -87,8 +87,8 @@ $(function() {
 		$("#throttle .value").text(ui.value);
 		
 		// Should we broadcast this value change to the supervisor?
-		if ($("#throttle .slider").hasClass("updated")) {
-			$("#throttle .slider").removeClass("updated");
+		if ($("#throttle .slider").hasClass("do-not-broadcast")) {
+			$("#throttle .slider").removeClass("do-not-broadcast");
 		}
 		
 		else {		
@@ -137,8 +137,8 @@ $(function() {
 		$("#fl-angle .value").text(ui.value + "°");
 		
 		// Should we broadcast this value change to the supervisor?
-		if ($("#fl-angle .slider").hasClass("updated")) {
-			$("#fl-angle .slider").removeClass("updated");
+		if ($("#fl-angle .slider").hasClass("do-not-broadcast")) {
+			$("#fl-angle .slider").removeClass("do-not-broadcast");
 		}
 		
 		else {
