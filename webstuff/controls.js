@@ -1,6 +1,7 @@
 // Global to keep track of whether the status is hidden
 var statusDisplayed = true;
 var updateDelayTimer;
+var cameraReloadTimer;
 
 // This function can be used to determine when the page has finished
 // updating after a resize event.
@@ -35,6 +36,7 @@ function setStatus(show, message) {
 	}
 }
 	
+
 function updateControls(data) {
 
 	switch(data["fl-state"]) {
@@ -75,10 +77,17 @@ function updateControls(data) {
 }
 
 
-function delayedUpdate(ms) {
+function updateCameras() {
+	var d = new Date();
+	$("#camera1").attr("src", "cameras/camera1.jpg#" + d.getTime());
+}
+
+
+function waitThenUpdateState(ms) {
 	clearTimeout(updateDelayTimer);
 	
 	updateDelayTimer = setTimeout(function() {
+		updateCameras();
 		sendCommand({
 			cmd: "update"
 		});
@@ -98,20 +107,20 @@ function sendCommand(commands) {
 				
 			if ("error" in data) {
 				setStatus(true, data["error"]);
-				delayedUpdate(10000);
+				waitThenUpdateState(10000);
 			}
 			
 			else {
 				setStatus(false);
 				updateControls(data);
-				delayedUpdate(1000);
+				waitThenUpdateState(1000);
 			}
 			
 		},
 		
 		error: function(jqHXR, status, error) {	
 			setStatus(true, "Something went wrong with the command.cgi script.");
-			delayedUpdate(10000);
+			waitThenUpdateState(10000);
 		}
 	});
 }	
