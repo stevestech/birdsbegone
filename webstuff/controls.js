@@ -1,7 +1,6 @@
 // Global to keep track of whether the status is hidden
 var statusDisplayed = true;
 var updateDelayTimer;
-var cameraReloadTimer;
 
 // This function can be used to determine when the page has finished
 // updating after a resize event.
