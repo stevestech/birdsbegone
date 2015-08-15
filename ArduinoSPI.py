@@ -2,9 +2,7 @@
 import spidev
 import time
 import RPi.GPIO as GPIO
-
 import wheel
-
 
 class Commands:
     SET_STATE = 'A'
@@ -16,61 +14,67 @@ class Commands:
 
 
 class SPI:
-    def __init__(self, state, ss_pin=25, spi_delay=1000):
+    def __init__(self, state, ss_pin_list, spi_delay=1000):
         """
         Handle SPI communication with a slave
         Note the slave must be programmed in a specific way to work with this code
         """
         self.running = True
-        
+		self.recieve_text_limit = 10
+		
         self.state = state
         
-        self.ss_pin = ss_pin # Slave Select Pin
+		
+        self.ss_pin_list = ss_pin_list # Slave Select Pin
         self.spi_delay = spi_delay # SPI delay between transfers (us)
         
-        GPIO.cleanup()
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(ss_pin, GPIO.OUT)
-        GPIO.output(ss_pin, 1) # set SS high
+		GPIO.cleanup()
+		GPIO.setmode(GPIO.BCM)
+		
+		for ss_pin in ss_pin_list:
+			GPIO.setup(ss_pin, GPIO.OUT) # set SS pin as an output
+			GPIO.output(ss_pin, 1) # set SS pin to high
 
         self.spi = spidev.SpiDev()
         self.spi.open(0,0)
         
     
     
-    def sendString(self, string):
+    def sendString(self, string, ss_pin_list_index):
         """
         Sends a string across to a SPI slave
         String length currently limited to length of 12, can modify on slave.
         """
+		ss_pin = self.ss_pin_list[ss_pin_list_index]
         send_list = list(string)
         send_list = send_list[:12]
         send_list.append(chr(3)) # 3 = ETX (End of Text) to signify string finished 
         
-        GPIO.output(self.ss_pin, 0) # set SS low
+        GPIO.output(ss_pin, 0) # set SS low
         self.transferByteAndWait(16) # Send command 16 to signify string being sent
         for send_byte in send_list:
             self.transferByteAndWait(ord(send_byte))
-        GPIO.output(self.ss_pin, 1) # set SS high
+        GPIO.output(ss_pin, 1) # set SS high
         
-    def recieveString(self, command):
+    def recieveString(self, command, ss_pin_list_index):
         """
-        Recieves a string from an SPI slave
+        Receives a string from an SPI slave
         The slave must have the string ready to send in a buffer
-        When the slave recieves the correct command returns the corresponding string
+        When the slave receives the correct command returns the corresponding string
         """
+		ss_pin = self.ss_pin_list[ss_pin_list_index]
         recieve_byte = [0]
         recieved_list = []
-        GPIO.output(self.ss_pin, 0) # set SS low
+        GPIO.output(ss_pin, 0) # set SS low
         self.transferByteAndWait(command) # Send command asking for string
         self.transferByteAndWait(0) # Sending dummy data while waiting for response
-        while (recieve_byte[0] !=  3): # 3 = ETX (End of Text) to signify recieving finished 
-            recieve_byte = self.transferByteAndWait(0) # Recieve a byte from the slave
+        while (recieve_byte[0] !=  3): # 3 = ETX (End of Text) to signify receiving finished 
+            recieve_byte = self.transferByteAndWait(0) # Receive a byte from the slave
             recieved_list.append(chr(recieve_byte[0])) # Append the character to the list
-            if (len(recieved_list) >= 10): # If don't recieve end of text, break
+            if (len(recieved_list) >= self.recieve_text_limit): # If don't receive end of text after a certain character limit, break
                 recieved_list = []
                 break
-        GPIO.output(self.ss_pin, 1) # set SS high
+        GPIO.output(ss_pin, 1) # set SS high
         
         if (len(recieved_list) != 0):
             del recieved_list[-1] # Delete the end of text command
@@ -83,9 +87,9 @@ class SPI:
         """
         Send a single byte across to the slave
         Assumes slave select has already been pulled low
-        To recieve a byte you must use this function multiple times.
+        To receive a byte you must use this function multiple times.
         
-        Recieving Example:
+        Receiving Example:
         transferByteAndWait(COMMAND)
         transferByteAndWait(DUMMY)
         RECIEVED_BYTE = transferByteAndWait(DUMMY)
@@ -97,8 +101,8 @@ class SPI:
     
     def readArduinoState(self, channel):
         try:
-            angle = int(self.recieveString(Commands.GET_MEASURED_ANGLE))
-            actuator = int(self.recieveString(Commands.GET_ACTUATOR))
+            angle = int(self.recieveString(Commands.GET_MEASURED_ANGLE, channel))
+            actuator = int(self.recieveString(Commands.GET_ACTUATOR, channel))
             
         except ValueError:
             # SPI did not return the expected value / is not online
@@ -126,7 +130,7 @@ class SPI:
         
         while self.running:
             # No time.sleep() needed as we have spi_delay
-            self.sendString(self.state.frontLeftWheel.getStateAsSPIMessage())
+            self.sendString(self.state.frontLeftWheel.getStateAsSPIMessage(), wheel.Channels.FRONT_LEFT)
             self.readArduinoState(wheel.Channels.FRONT_LEFT)
                         
 
