@@ -2,6 +2,7 @@
 import picamera
 import time
 import os
+import subprocess
 
 
 class Camera:
@@ -11,8 +12,11 @@ class Camera:
                
         self.camera = None
     
-        self.filepathLoading = "/var/www/cameras/loadingCamera1.jpg"
-        self.filepathComplete = "/var/www/cameras/camera1.jpg"
+        # This is a RAM-disk provided by Pi out of the box. Writing here
+        # avoids thrashing the SD card, which only has a limited number
+        # of read/write cycles and is slow as heck.
+        self.filepathLoading = "/run/shm/loadingCamera1.jpg"
+        self.filepathComplete = "/run/shm/camera1.jpg"
         
            
     def run(self):
@@ -28,7 +32,7 @@ class Camera:
         self.camera.framerate = 2
         
         # allow camera to warmup
-        time.sleep(0.1)        
+        time.sleep(0.1)
         
         
         while self.running:
