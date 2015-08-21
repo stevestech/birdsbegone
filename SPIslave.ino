@@ -22,7 +22,8 @@
 #define CMD_GET_ANGLE                   17
 #define CMD_GET_ACTUATOR                18
 
-#define PWM_OUT_MAX                     255
+#define ACTUATOR_PWM_MAX                127    // Limit the max duty cycle that can be applied to the actuator driver
+
 #define ANALOG_IN_MAX                   1023
 
 #define BASE_10                         10
@@ -33,11 +34,11 @@
 #define PIN_HM_REVERSE                  7      // D7
 
 // Actuator pins
-#define PIN_A_THROTTLE                  6      // D6 Timer0A
-#define PIN_A_CLOCKWISE                 8      // D8
-#define PIN_A_ANTICLOCKWISE             9      // D9 Timer1A    
-#define PIN_A_CURRENT_SENSE             1      // A1
-#define PIN_A_POSITION_SENSE            0      // A2
+#define PIN_A_THROTTLE_CW               6      // D6 Timer0A
+#define PIN_A_THROTTLE_ACW              9      // D9 Timer1A
+#define PIN_A_POSITION_SENSE            0      // A0
+#define PIN_A_STATUS_L                  1      // A1
+#define PIN_A_STATUS_R                  2      // A2
 
 // Actuator PID gains
 #define GAIN_PROPORTIONAL               1
@@ -242,17 +243,15 @@ void updateActuator(void)
     
     if (actuatorControllerOutput >= 0)
     {
-      digitalWrite(PIN_A_CLOCKWISE, HIGH);
-      digitalWrite(PIN_A_ANTICLOCKWISE, LOW);
+      analogWrite(PIN_A_THROTTLE_CW, (int)actuatorControllerOutput);
+      analogWrite(PIN_A_THROTTLE_ACW, 0);
     }
     
     else
     {
-      digitalWrite(PIN_A_CLOCKWISE, LOW);
-      digitalWrite(PIN_A_ANTICLOCKWISE, HIGH);
+      analogWrite(PIN_A_THROTTLE_CW, 0);
+      analogWrite(PIN_A_THROTTLE_ACW, (int)actuatorControllerOutput * -1);
     }
-    
-    analogWrite(PIN_A_THROTTLE, (int)actuatorControllerOutput);
   }
 }
     
@@ -283,20 +282,18 @@ void setup (void)
   pinMode(PIN_HM_BRAKE, OUTPUT);
   pinMode(PIN_HM_REVERSE, OUTPUT);
   
-  pinMode(PIN_A_THROTTLE, OUTPUT);
-  pinMode(PIN_A_CLOCKWISE, OUTPUT);
-  pinMode(PIN_A_ANTICLOCKWISE, OUTPUT);
+  pinMode(PIN_A_THROTTLE_CW, OUTPUT);
+  pinMode(PIN_A_THROTTLE_ACW, OUTPUT);
   
   analogWrite(PIN_HM_THROTTLE, 0);
   digitalWrite(PIN_HM_BRAKE, HIGH);
   digitalWrite(PIN_HM_REVERSE, HIGH);
   
-  analogWrite(PIN_A_THROTTLE, 0);
-  digitalWrite(PIN_A_CLOCKWISE, LOW);
-  digitalWrite(PIN_A_ANTICLOCKWISE, LOW); 
+  analogWrite(PIN_A_THROTTLE_CW, 0);
+  analogWrite(PIN_A_THROTTLE_ACW, 0);
   
   actuatorController.SetMode(AUTOMATIC);
-  actuatorController.SetOutputLimits(PWM_OUT_MAX * -1, PWM_OUT_MAX);
+  actuatorController.SetOutputLimits(ACTUATOR_PWM_MAX * -1, ACTUATOR_PWM_MAX);
   
   // turn on SPI in slave mode
   SPCR |= bit (SPE);
@@ -421,7 +418,7 @@ ISR (SPI_STC_vect)
 
 // main loop - wait for flag set in interrupt routine
 void loop (void)
-{  
+{
   // If an SPI message has arrived, then process it
   if (recv_buffer_full)
   {
