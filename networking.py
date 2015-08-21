@@ -34,7 +34,7 @@ class Networking:
             message = client.recv(self.bufferSize)
                     
             # DEBUG:
-            print("Webclient sent: " + message)
+            #print("Webclient sent: " + message)
             
             if message.startswith("{") and message.endswith("}"):
                 self.executeJSON(message)
