@@ -28,8 +28,8 @@ class SPI:
         self.ss_pin_list = ss_pin_list # Slave Select Pin
         self.spi_delay = spi_delay # SPI delay between transfers (us)
         
-        GPIO.cleanup()
         GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
   
         for ss_pin in ss_pin_list:
             GPIO.setup(ss_pin, GPIO.OUT) # set SS pin as an output
@@ -121,8 +121,12 @@ class SPI:
         # Wait until SPI is online and then set the current wheel position
         # as the wheel angle setpoint.
         
-        while not self.readArduinoState(wheel.Channels.FRONT_LEFT):
+        print("Establishing SPI connection to Arduino...")
+        
+        while self.running and not self.readArduinoState(wheel.Channels.FRONT_LEFT):
             pass
+            
+        print("Success.")
             
         with self.state.lock:
             self.state.frontLeftWheel.desiredAngle = self.state.frontLeftWheel.measuredAngle
