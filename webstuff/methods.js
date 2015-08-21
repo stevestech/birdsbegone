@@ -30,7 +30,7 @@ $(function() {
 	
 	$("#fl-actuator .bar").progressbar({
 		value: 0,
-		max: 510
+		max: 255
 	});
 });
 
@@ -60,7 +60,6 @@ function setStatus(show, message) {
 // After the state has been loaded from the supervisor, update the
 // controls with new information
 function updateControls(data) {
-
 	switch(data["fl-state"]) {
 		case "neutral":
 			$("#manual-states-neutral").prop("checked", true);
@@ -95,7 +94,7 @@ function updateControls(data) {
 	$("#fl-angle-pot .bar").progressbar("value", data["fl-angle-pot"]);
 	
 	$("#fl-actuator .value").text(data["fl-actuator"]);
-	$("#fl-actuator .bar").progressbar("value", data["fl-actuator"] + 255);
+	$("#fl-actuator .bar").progressbar("value", data["fl-actuator"] + 127);
 }
 
 
@@ -150,4 +149,13 @@ function updateControlsWidth() {
 	
 	$(".slider").css("width", sliderWidth);
 	$(".bar").css("width", progressBarWidth);
+}
+
+
+function startUpdatingCameras() {
+	$("#camera1").attr("src", "http://localhost:8080/?action=stream");
+}
+
+function stopUpdatingCameras() {
+	$("#camera1").attr("src", "");
 }
