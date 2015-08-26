@@ -12,6 +12,13 @@ void initialiseGpio(void) {
   pinMode(PIN_A_THROTTLE_CW, OUTPUT);
   pinMode(PIN_A_THROTTLE_ACW, OUTPUT);
   
+  analogWrite(PIN_HM_THROTTLE, 0);
+  digitalWrite(PIN_HM_BRAKE, HIGH);
+  digitalWrite(PIN_HM_REVERSE, HIGH);
+  
+  analogWrite(PIN_A_THROTTLE_CW, 0);
+  analogWrite(PIN_A_THROTTLE_ACW, 0);  
+  
   // Set pin 3 PWM (Timer 2) switching frequency to 31250 Hz
   setTimerPrescaler(2, 1);
   // Set pin 9 PWM (Timer 1) switching frequency to 31250 Hz
@@ -51,13 +58,13 @@ void setTimerPrescaler(uint8_t timer, uint8_t prescaler) {
 void setActuator(double controllerOutput) {
     // Move in clockwise direction
     if (controllerOutput >= 0) {
-        analogWrite(PIN_A_THROTTLE_CW, (uint8_t)(controllerOutput + ACTUATOR_SLEW_OFFSET));
         analogWrite(PIN_A_THROTTLE_ACW, 0);
+        analogWrite(PIN_A_THROTTLE_CW, (uint8_t)(controllerOutput + ACTUATOR_PWM_MIN));
     }
     
     // Move in anticlockwise direction
     else {
         analogWrite(PIN_A_THROTTLE_CW, 0);
-        analogWrite(PIN_A_THROTTLE_ACW, (uint8_t)(controllerOutput * -1 + ACTUATOR_SLEW_OFFSET));
+        analogWrite(PIN_A_THROTTLE_ACW, (uint8_t)(controllerOutput * -1 + ACTUATOR_PWM_MIN));
     }    
 }

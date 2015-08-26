@@ -26,8 +26,7 @@
 #define CMD_GET_ANGLE                   17
 #define CMD_GET_ACTUATOR                18
 
-#define ACTUATOR_PWM_MAX                (127 - ACTUATOR_SLEW_OFFSET)       // Limit the max duty cycle that can be applied to the actuator driver. 255 corresponds to 100% duty cycle.
-#define ACTUATOR_SLEW_OFFSET            60     // This is used to reduce the deadzone caused by slew rate from high frequency PWM. High value, less dead zone. Max 72.
+
 
 #define ANALOG_IN_MAX                   1023
 
@@ -35,15 +34,7 @@
 
 
 
-// Actuator PID gains
-#define GAIN_PROPORTIONAL               1
-#define GAIN_INTEGRAL                   0
-#define GAIN_DIFFERENTIAL               0
 
-#define STATE_NEUTRAL                   '0'
-#define STATE_BRAKING                   '1'
-#define STATE_FORWARD                   '2'
-#define STATE_REVERSE                   '3'
 
 #define CMD_SET_STATE                   'A'
 #define CMD_SET_THROTTLE                'B'
@@ -53,23 +44,13 @@
 
 
 
-char hubMotorState;
+
 
 char char_throttle [CHARS_THROTTLE + 1];
-// Long because strtol returns a long
-long hubMotorThrottle;
+
 
 char char_angle [CHARS_ANGLE + 1];
 
-PID actuatorController(
-  &measuredActuatorAngle,
-  &actuatorControllerOutput,
-  &desiredActuatorAngle,
-  GAIN_PROPORTIONAL,
-  GAIN_INTEGRAL,
-  GAIN_DIFFERENTIAL,
-  DIRECT);  
-  
 char send_buffer[LENGTH_SPI_BUFFER];
 volatile byte send_index;
 
@@ -193,47 +174,9 @@ void processSPIMessage(void)
   }
 }  
 
-
-void updateHubMotor(void)
-{
-  switch (hubMotorState)
-  {
-    default:
-    case STATE_NEUTRAL:
-      analogWrite(PIN_HM_THROTTLE, 0);
-      digitalWrite(PIN_HM_BRAKE, HIGH);
-      digitalWrite(PIN_HM_REVERSE, HIGH);
-    break;
-    
-    case STATE_BRAKING:
-      analogWrite(PIN_HM_THROTTLE, 0);
-      digitalWrite(PIN_HM_BRAKE, LOW);
-      digitalWrite(PIN_HM_REVERSE, HIGH);
-    break;
-    
-    case STATE_FORWARD:
-      analogWrite(PIN_HM_THROTTLE, hubMotorThrottle);
-      digitalWrite(PIN_HM_BRAKE, HIGH);
-      digitalWrite(PIN_HM_REVERSE, HIGH);
-    break;
-    
-    case STATE_REVERSE:
-      analogWrite(PIN_HM_THROTTLE, hubMotorThrottle);
-      digitalWrite(PIN_HM_BRAKE, HIGH);
-      digitalWrite(PIN_HM_REVERSE, LOW);
-    break;
-  }
-}
-
-
-
-    
     
 void setup (void)
 {
-  hubMotorState = STATE_NEUTRAL;
-  hubMotorThrottle = 0;
-  desiredActuatorAngle = -1;
   command = 0;
   
   send_index = 0;   // buffer empty
@@ -249,15 +192,7 @@ void setup (void)
   
 
   
-  analogWrite(PIN_HM_THROTTLE, 0);
-  digitalWrite(PIN_HM_BRAKE, HIGH);
-  digitalWrite(PIN_HM_REVERSE, HIGH);
-  
-  analogWrite(PIN_A_THROTTLE_CW, 0);
-  analogWrite(PIN_A_THROTTLE_ACW, 0);
-  
-  actuatorController.SetMode(AUTOMATIC);
-  actuatorController.SetOutputLimits(ACTUATOR_PWM_MAX * -1, ACTUATOR_PWM_MAX);
+
   
   // turn on SPI in slave mode
   SPCR |= bit (SPE);
