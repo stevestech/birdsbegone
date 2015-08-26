@@ -1,11 +1,15 @@
-#include <SPI.h>
-#include <PID_v1.h>
-
+// C++ libraries
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <limits.h>
+
+// Arduino libraries
+#include <SPI.h>
+
+// Modules
+#include "actuator.h"
 
 //#define DEBUG_SPI
 
@@ -29,17 +33,7 @@
 
 #define BASE_10                         10
 
-// Hub motor pins
-#define PIN_HM_THROTTLE                 5      // D5 Timer0B
-#define PIN_HM_BRAKE                    4      // D4
-#define PIN_HM_REVERSE                  7      // D7
 
-// Actuator pins
-#define PIN_A_THROTTLE_CW               3      // D3 Timer2B
-#define PIN_A_THROTTLE_ACW              9      // D9 Timer1A
-#define PIN_A_POSITION_SENSE            0      // A0
-#define PIN_A_STATUS_L                  1      // A1
-#define PIN_A_STATUS_R                  2      // A2
 
 // Actuator PID gains
 #define GAIN_PROPORTIONAL               1
@@ -66,9 +60,6 @@ char char_throttle [CHARS_THROTTLE + 1];
 long hubMotorThrottle;
 
 char char_angle [CHARS_ANGLE + 1];
-double desiredActuatorAngle;
-double measuredActuatorAngle;
-double actuatorControllerOutput;
 
 PID actuatorController(
   &measuredActuatorAngle,
@@ -235,26 +226,7 @@ void updateHubMotor(void)
 }
 
 
-void updateActuator(void)
-{
-  if (desiredActuatorAngle != -1)
-  {
-    measuredActuatorAngle = analogRead(PIN_A_POSITION_SENSE);
-    actuatorController.Compute();
-    
-    if (actuatorControllerOutput >= 0)
-    {
-      analogWrite(PIN_A_THROTTLE_CW, (int)actuatorControllerOutput + ACTUATOR_SLEW_OFFSET);
-      analogWrite(PIN_A_THROTTLE_ACW, 0);
-    }
-    
-    else
-    {
-      analogWrite(PIN_A_THROTTLE_CW, 0);
-      analogWrite(PIN_A_THROTTLE_ACW, (int)actuatorControllerOutput * -1 + ACTUATOR_SLEW_OFFSET);
-    }
-  }
-}
+
     
     
 void setup (void)
@@ -275,19 +247,7 @@ void setup (void)
   Serial.begin(9600);
   Serial.print("Start setup...");
   
-  // Have to send on MISO
-  pinMode(MISO, OUTPUT);
-  pinMode(PIN_HM_THROTTLE, OUTPUT);
-  pinMode(PIN_HM_BRAKE, OUTPUT);
-  pinMode(PIN_HM_REVERSE, OUTPUT);
-  
-  pinMode(PIN_A_THROTTLE_CW, OUTPUT);
-  pinMode(PIN_A_THROTTLE_ACW, OUTPUT);
-  
-  // Set pin 3 PWM (Timer 2) switching frequency to 31250 Hz
-  TCCR2B = TCCR2B & 0b11111000 | 0x01;
-  // Set pin 9 PWM (Timer 1) switching frequency to 31250 Hz
-  TCCR1B = TCCR1B & 0b11111000 | 0x01;
+
   
   analogWrite(PIN_HM_THROTTLE, 0);
   digitalWrite(PIN_HM_BRAKE, HIGH);
