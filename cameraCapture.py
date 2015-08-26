@@ -28,7 +28,7 @@ class Camera:
                 time.sleep(10)
                 
         self.camera.resolution = (640, 480)
-        self.camera.framerate = 2
+        self.camera.framerate = 4
         
         # allow camera to warmup
         time.sleep(0.1)

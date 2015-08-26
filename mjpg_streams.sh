@@ -1,3 +1,5 @@
+#! /bin/bash
+
 export LD_LIBRARY_PATH=/usr/local/lib
 
 mjpg_streamer -i "input_file.so -f /run/shm -n camera1.jpg" -o "output_http.so -p 8080"

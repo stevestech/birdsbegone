@@ -153,7 +153,7 @@ function updateControlsWidth() {
 
 
 function startUpdatingCameras() {
-	$("#camera1").attr("src", "http://localhost:8080/?action=stream");
+	$("#camera1").attr("src", "http://192.168.1.100:8080/?action=stream");
 }
 
 function stopUpdatingCameras() {
