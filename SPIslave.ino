@@ -22,7 +22,8 @@
 #define CMD_GET_ANGLE                   17
 #define CMD_GET_ACTUATOR                18
 
-#define ACTUATOR_PWM_MAX                127    // Limit the max duty cycle that can be applied to the actuator driver
+#define ACTUATOR_PWM_MAX                (127 - ACTUATOR_SLEW_OFFSET)       // Limit the max duty cycle that can be applied to the actuator driver. 255 corresponds to 100% duty cycle.
+#define ACTUATOR_SLEW_OFFSET            60     // This is used to reduce the deadzone caused by slew rate from high frequency PWM. High value, less dead zone. Max 72.
 
 #define ANALOG_IN_MAX                   1023
 
@@ -34,7 +35,7 @@
 #define PIN_HM_REVERSE                  7      // D7
 
 // Actuator pins
-#define PIN_A_THROTTLE_CW               6      // D6 Timer0A
+#define PIN_A_THROTTLE_CW               3      // D3 Timer2B
 #define PIN_A_THROTTLE_ACW              9      // D9 Timer1A
 #define PIN_A_POSITION_SENSE            0      // A0
 #define PIN_A_STATUS_L                  1      // A1
@@ -243,19 +244,17 @@ void updateActuator(void)
     
     if (actuatorControllerOutput >= 0)
     {
-      analogWrite(PIN_A_THROTTLE_CW, (int)actuatorControllerOutput);
+      analogWrite(PIN_A_THROTTLE_CW, (int)actuatorControllerOutput + ACTUATOR_SLEW_OFFSET);
       analogWrite(PIN_A_THROTTLE_ACW, 0);
     }
     
     else
     {
       analogWrite(PIN_A_THROTTLE_CW, 0);
-      analogWrite(PIN_A_THROTTLE_ACW, (int)actuatorControllerOutput * -1);
+      analogWrite(PIN_A_THROTTLE_ACW, (int)actuatorControllerOutput * -1 + ACTUATOR_SLEW_OFFSET);
     }
   }
 }
-    
-    
     
     
 void setup (void)
@@ -284,6 +283,11 @@ void setup (void)
   
   pinMode(PIN_A_THROTTLE_CW, OUTPUT);
   pinMode(PIN_A_THROTTLE_ACW, OUTPUT);
+  
+  // Set pin 3 PWM (Timer 2) switching frequency to 31250 Hz
+  TCCR2B = TCCR2B & 0b11111000 | 0x01;
+  // Set pin 9 PWM (Timer 1) switching frequency to 31250 Hz
+  TCCR1B = TCCR1B & 0b11111000 | 0x01;
   
   analogWrite(PIN_HM_THROTTLE, 0);
   digitalWrite(PIN_HM_BRAKE, HIGH);
