@@ -20,7 +20,6 @@
 #ifdef RELAY_OPERATOR
 
 #define PIN_LOW_CURRENT_RELAY           7      // D7
-#define PIN_POWER_ON_BUTTON             8      // D8
 #define PIN_BATTERY_VOLTAGE             3      // A3
 #define PIN_BATTERY_CURRENT             4      // A4
 
