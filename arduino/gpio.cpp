@@ -3,26 +3,43 @@
 #include "gpio.h"
 
 void initialiseGpio(void) {
-  // Have to send on MISO
-  pinMode(MISO, OUTPUT);
-  pinMode(PIN_HM_THROTTLE, OUTPUT);
-  pinMode(PIN_HM_BRAKE, OUTPUT);
-  pinMode(PIN_HM_REVERSE, OUTPUT);
+    // Hub Motor Pins
+    pinMode(PIN_HM_SPEED_SENSE, INPUT);           // D2 INT0
+    pinMode(PIN_HM_BRAKE, OUTPUT);                // D4
+    pinMode(PIN_HM_THROTTLE, OUTPUT);             // D5 TIMER0B
+    pinMode(PIN_HM_REVERSE, OUTPUT);              // D6
+    
+    digitalWrite(PIN_HM_BRAKE, HIGH);
+    analogWrite(PIN_HM_THROTTLE, 0);
+    digitalWrite(PIN_HM_REVERSE, HIGH);
   
-  pinMode(PIN_A_THROTTLE_CW, OUTPUT);
-  pinMode(PIN_A_THROTTLE_ACW, OUTPUT);
+    // Actuator Pins
+    pinMode(PIN_A_THROTTLE_CW, OUTPUT);           // D3 TIMER2B
+    pinMode(PIN_A_THROTTLE_ACW, OUTPUT);          // D9 TIMER1A
+    
+    analogWrite(PIN_A_THROTTLE_CW, 0);
+    analogWrite(PIN_A_THROTTLE_ACW, 0);    
+    
+#ifdef RELAY_OPERATOR
+
+    // Power Control
+    pinMode(PIN_LOW_CURRENT_RELAY, OUTPUT);       // D7
+    pinMode(PIN_POWER_ON_BUTTON, INPUT_PULLUP);   // D8
+    
+    digitalWrite(PIN_LOW_CURRENT_RELAY, HIGH);
+    
+#endif // RELAY_OPERATOR
   
-  analogWrite(PIN_HM_THROTTLE, 0);
-  digitalWrite(PIN_HM_BRAKE, HIGH);
-  digitalWrite(PIN_HM_REVERSE, HIGH);
+    // SPI Pins
+    pinMode(SS, INPUT);                           // D10
+    pinMode(MOSI, INPUT);                         // D11
+    pinMode(MISO, OUTPUT);                        // D12
+    pinMode(SCLK, INPUT);                         // D13
   
-  analogWrite(PIN_A_THROTTLE_CW, 0);
-  analogWrite(PIN_A_THROTTLE_ACW, 0);  
-  
-  // Set pin 3 PWM (Timer 2) switching frequency to 31250 Hz
-  setTimerPrescaler(2, 1);
-  // Set pin 9 PWM (Timer 1) switching frequency to 31250 Hz
-  setTimerPrescaler(1, 1);
+    // Set pin 3 PWM (Timer 2) switching frequency to 31250 Hz
+    setTimerPrescaler(2, 1);
+    // Set pin 9 PWM (Timer 1) switching frequency to 31250 Hz
+    setTimerPrescaler(1, 1);
 }
 
 
