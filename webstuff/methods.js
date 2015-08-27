@@ -60,7 +60,7 @@ function setStatus(show, message) {
 // After the state has been loaded from the supervisor, update the
 // controls with new information
 function updateControls(data) {
-	switch(data["fl-state"]) {
+	switch(data["WHEELS"]["FRONT_LEFT"]["HM_MODE"]) {
 		case "neutral":
 			$("#manual-states-neutral").prop("checked", true);
 			$("#states").buttonset("refresh");
@@ -84,17 +84,17 @@ function updateControls(data) {
 
 	// Sliders should not broadcast this value change back to the
 	// supervisor, or a looping mess of sockets would result
-	$("#throttle .slider").addClass("updated");
-	$("#fl-angle .slider").addClass("updated");
+	$("#throttle .slider").addClass("no-broadcast");
+	$("#fl-angle .slider").addClass("no-broadcast");
 
-	$("#throttle .slider").slider("value", data["fl-throttle"]);
-	$("#fl-angle .slider").slider("value", data["fl-angle"]);
+	$("#throttle .slider").slider("value", data["WHEELS"]["FRONT_LEFT"]["HM_THROTTLE"]);
+	$("#fl-angle .slider").slider("value", data["WHEELS"]["FRONT_LEFT"]["A_ANGLE_D"]);
 	
-	$("#fl-angle-pot .value").text(data["fl-angle-pot"]);
-	$("#fl-angle-pot .bar").progressbar("value", data["fl-angle-pot"]);
+	$("#fl-angle-pot .value").text(data["WHEELS"]["FRONT_LEFT"]["A_ANGLE_M"]);
+	$("#fl-angle-pot .bar").progressbar("value", data["WHEELS"]["FRONT_LEFT"]["A_ANGLE_M"]);
 	
-	$("#fl-actuator .value").text(data["fl-actuator"]);
-	$("#fl-actuator .bar").progressbar("value", data["fl-actuator"] + 127);
+	$("#fl-actuator .value").text(data["WHEELS"]["FRONT_LEFT"]["A_THROTTLE"]);
+	$("#fl-actuator .bar").progressbar("value", data["A_THROTTLE"] + 127);
 }
 
 

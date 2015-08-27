@@ -57,47 +57,47 @@ class Networking:
                 messageDict = json.loads(message)
                 
                 # Set the throttle
-                if messageDict["cmd"] == "setThrottle":
+                if messageDict["cmd"] == "setHmThrottle":
                     if (messageDict["wheel"] == "fl") or (messageDict["wheel"] == "all"):
-                        self.state.frontLeftWheel.setThrottle(messageDict["throttle"])
+                        self.state.wheels['FRONT_LEFT'].setHmThrottle(messageDict["throttle"])
                         
                     if (messageDict["wheel"] == "fr") or (messageDict["wheel"] == "all"):
-                        self.state.frontRightWheel.setThrottle(messageDict["throttle"])
+                        self.state.wheels['FRONT_RIGHT'].setHmThrottle(messageDict["throttle"])
                         
                     if (messageDict["wheel"] == "bl") or (messageDict["wheel"] == "all"):
-                        self.state.backLeftWheel.setThrottle(messageDict["throttle"])
+                        self.state.wheels['BACK_LEFT'].setHmThrottle(messageDict["throttle"])
                         
                     if (messageDict["wheel"] == "br") or (messageDict["wheel"] == "all"):
-                        self.state.backRightWheel.setThrottle(messageDict["throttle"])
+                        self.state.wheels['BACK_RIGHT'].setHmThrottle(messageDict["throttle"])
                         
                     
                 # Set the hub motor state
-                elif messageDict["cmd"] == "setState":
+                elif messageDict["cmd"] == "setHmMode":
                     if (messageDict["wheel"] == "fl") or (messageDict["wheel"] == "all"):
-                        self.state.frontLeftWheel.setState(messageDict["state"])
+                        self.state.wheels['FRONT_LEFT'].setHmMode(messageDict["mode"])
                         
                     if (messageDict["wheel"] == "fr") or (messageDict["wheel"] == "all"):
-                        self.state.frontRightWheel.setState(messageDict["state"])
+                        self.state.wheels['FRONT_RIGHT'].setHmMode(messageDict["mode"])
                         
                     if (messageDict["wheel"] == "bl") or (messageDict["wheel"] == "all"):
-                        self.state.backLeftWheel.setState(messageDict["state"])
+                        self.state.wheels['BACK_LEFT'].setHmMode(messageDict["mode"])
                         
                     if (messageDict["wheel"] == "br") or (messageDict["wheel"] == "all"):
-                        self.state.backRightWheel.setState(messageDict["state"])
+                        self.state.wheels['BACK_RIGHT'].setHmMode(messageDict["mode"])
                         
                 # Set the wheel's desired angle
-                elif messageDict["cmd"] == "setAngle":
+                elif messageDict["cmd"] == "setActAngle":
                     if (messageDict["wheel"] == "fl") or (messageDict["wheel"] == "all"):
-                        self.state.frontLeftWheel.setDesiredAngle(messageDict["angle"])
+                        self.state.wheels['FRONT_LEFT'].setADesiredOrientation(messageDict["angle"])
                         
                     if (messageDict["wheel"] == "fr") or (messageDict["wheel"] == "all"):
-                        self.state.frontRightWheel.setDesiredAngle(messageDict["angle"])
+                        self.state.wheels['FRONT_RIGHT'].setADesiredOrientation(messageDict["angle"])
                         
                     if (messageDict["wheel"] == "bl") or (messageDict["wheel"] == "all"):
-                        self.state.backLeftWheel.setDesiredAngle(messageDict["angle"])
+                        self.state.wheels['BACK_LEFT'].setADesiredOrientation(messageDict["angle"])
                         
                     if (messageDict["wheel"] == "br") or (messageDict["wheel"] == "all"):
-                        self.state.backRightWheel.setDesiredAngle(messageDict["angle"])
+                        self.state.wheels['BACK_RIGHT'].setADesiredOrientation(messageDict["angle"])
                                 
             
         except (ValueError, KeyError) as e:

@@ -42,7 +42,7 @@ class SPI:
     attemptsPerByte = 3
     
     # SPI delay between transfers (s)
-    spiDelay = 0.5
+    delay = 0.001
 
     def __init__(self, state):
         self.state = state
@@ -85,9 +85,6 @@ class SPI:
         # This prepares the slave for a new SPI operation
         GPIO.output(SPI.ssPins[channel], GPIO.LOW)
         
-        # Used to check slave echo
-        echoByte = '\0'
-        
         completeSuccess = False
         
         try:
@@ -110,13 +107,6 @@ class SPI:
                     self.state.spiErrorCounts[channel][incomingByte] += 1
                     break
                 
-                # Verify that the slave is echoing our outgoing bytes correctly
-                elif incomingByte != echoByte:
-                    self.state.spiErrorCounts[channel]['SLAVE_ECHO_FAILED'] += 1
-                    break
-                    
-                echoByte = outgoingByte
-                
             else:
                 # For loop finished with no errors detected! (No breaks)
                 completeSuccess = True
@@ -137,7 +127,7 @@ class SPI:
         incomingBuffer = []
         
         GPIO.output(SPI.ssPins[channel], GPIO.LOW)
-        echoByte = self.transferByte(SPI.commands[command])
+        self.transferByte(SPI.commands[command])
         
         completeSuccess = False
         
@@ -147,7 +137,7 @@ class SPI:
             while True:
                 for attempt in range(SPI.attemptsPerByte):
                     # Echo the received bytes to enable verification by the slave
-                    incomingByte = self.transferByte(echoByte)
+                    incomingByte = self.transferByte('\0')
                     self.state.spiErrorCounts[channel]['NUM_TRANSFERS'] += 1
                     
                     if incomingByte == SPI.errors['NOT_READY']:
@@ -156,8 +146,6 @@ class SPI:
                     # No more attempts needed as slave has responded, either with error or with data
                     else:
                         break
-                    
-                print(ord(incomingByte))
                         
                 if incomingByte in self.slaveErrors:
                     self.state.spiErrorCounts[channel][incomingByte] += 1
@@ -175,7 +163,6 @@ class SPI:
                     break
                     
                 incomingBuffer.append(incomingByte)
-                echoByte = incomingByte
                 
         
         # This guarantees that slave select goes back to high            
@@ -199,7 +186,7 @@ class SPI:
         transferByteAndWait(DUMMY)
         RECIEVED_BYTE = transferByteAndWait(DUMMY)
         """
-        time.sleep(SPI.spiDelay)
+        time.sleep(SPI.delay)
         
         # If outgoingByte passed in as a char, convert to an ASCII int
         outgoingByte = ord(outgoingByte)
@@ -211,19 +198,22 @@ class SPI:
     
     def readArduinoState(self, channel):
         try:
-            angle = int(self.recieveString(Commands.GET_MEASURED_ANGLE, channel))
-            actuator = int(self.recieveString(Commands.GET_ACTUATOR, channel))
+            angle = self.receiveString(channel, 'LOAD_A_MEASURED_ORIENTATION')
+            actuator = self.receiveString(channel, 'LOAD_A_CONTROLLER_OUTPUT')
+            
+            # Check for null values
+            if not angle or not actuator:
+                return False
+                
+            with self.state.lock:
+                self.state.wheels['FRONT_LEFT'].aMeasuredOrientation = int(angle)
+                self.state.wheels['FRONT_LEFT'].aThrottle = int(actuator)
             
         except ValueError:
             # SPI did not return the expected value / is not online
             return False
             
         else:
-            with self.state.lock:
-                wheel = self.state.getWheel(channel)
-                wheel.measuredAngle = angle
-                wheel.actuator = actuator
-                
             return True
                 
         
@@ -233,30 +223,19 @@ class SPI:
         
         print("Establishing SPI connection to Arduino...")
         
-        while self.state.running and not self.readArduinoState(wheel.Channels.FRONT_LEFT):
-            pass
+        while not self.readArduinoState('FRONT_LEFT'):
+            if not self.state.running:
+                return
             
         print("Success.")
             
         with self.state.lock:
-            self.state.frontLeftWheel.desiredAngle = self.state.frontLeftWheel.measuredAngle
+            self.state.wheels['FRONT_LEFT'].setADesiredOrientation(self.state.wheels['FRONT_LEFT'].aMeasuredOrientation)
             
         
         while self.state.running:
-            # No time.sleep() needed as we have spi_delay
-            self.sendString(self.state.frontLeftWheel.getStateAsSPIMessage(), wheel.Channels.FRONT_LEFT)
-            self.readArduinoState(wheel.Channels.FRONT_LEFT)
-                        
-
-"""
-def main():
-    arduinoSPI = SPI()
-    
-    while True:
-        send_str = raw_input("Enter message to send: ")
-        arduinoSPI.sendString(send_str)
-        return_str = arduinoSPI.recieveString(17) # Retrieve string stored in command 17
-        print return_str
-if __name__ == '__main__':
- main()
-"""
+            self.sendString('FRONT_LEFT', 'RECEIVE_A_ORIENTATION', str(self.state.wheels['FRONT_LEFT'].aDesiredOrientation))
+            self.sendString('FRONT_LEFT', 'RECEIVE_HM_STATE', str(self.state.wheels['FRONT_LEFT'].hmMode))
+            self.sendString('FRONT_LEFT', 'RECEIVE_HM_THROTTLE', str(self.state.wheels['FRONT_LEFT'].hmThrottle))
+            
+            self.readArduinoState('FRONT_LEFT')

@@ -46,6 +46,6 @@ class State:
         
         state['WHEELS'] = {}
         for wheel in self.wheels:
-            state['WHEELS'] = wheel.getJsonObject()
+            state['WHEELS'][wheel] = self.wheels[wheel].getJsonObject()
         
         return json.dumps(state)

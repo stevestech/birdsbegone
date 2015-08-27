@@ -32,8 +32,8 @@ class Wheel:
             self.setHmThrottle(0)
         
         # Check that the new mode is a valid value
-        if mode in modes:
-            self.mode = mode
+        if mode.upper() in Wheel.modes:
+            self.hmMode = Wheel.modes[mode.upper()]
             
         else:
             raise ValueError("Hub motor mode was set to an invalid value: " + str(mode))
@@ -41,7 +41,7 @@ class Wheel:
             
     def getHmModeAsString(self):
         # Lookup dictionary key given its value (don't judge me!)
-        for key, value in modes.iteritems():
+        for key, value in Wheel.modes.iteritems():
             if self.hmMode == value:
                 return key
                 
@@ -52,7 +52,7 @@ class Wheel:
         if isinstance(throttle, basestring):
             throttle = int(throttle)
         
-        if PWM_MIN <= throttle <= PWM_MAX:
+        if Wheel.PWM_MIN <= throttle <= Wheel.PWM_MAX:
             self.hmThrottle = throttle
             
         else:
@@ -64,7 +64,7 @@ class Wheel:
         if isinstance(orientation, basestring):
             orientation = int(orientation)
         
-        if ANALOGUE_MIN <= orientation <= ANALOGUE_MAX:
+        if Wheel.ANALOGUE_MIN <= orientation <= Wheel.ANALOGUE_MAX:
             self.aDesiredOrientation = orientation
             
         else:
@@ -81,4 +81,6 @@ class Wheel:
         state['A_THROTTLE'] = self.aThrottle
         state['A_ANGLE_M'] = self.aMeasuredOrientation
         state['A_ANGLE_D'] = self.aDesiredOrientation
+        
+        return state
         
