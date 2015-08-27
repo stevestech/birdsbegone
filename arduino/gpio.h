@@ -6,7 +6,7 @@
 // Hub motor pins
 #define PIN_HM_THROTTLE                 5      // D5 Timer0B
 #define PIN_HM_BRAKE                    4      // D4
-#define PIN_HM_REVERSE                  7      // D7
+#define PIN_HM_REVERSE                  6      // D6
 #define PIN_HM_SPEED_SENSE              2      // D2
 
 // Actuator pins
@@ -19,7 +19,7 @@
 // If this Arduino is the one chosen to monitor battery condition
 #ifdef RELAY_OPERATOR
 
-#define PIN_LOW_CURRENT_RELAY           6      // D6
+#define PIN_LOW_CURRENT_RELAY           7      // D7
 #define PIN_POWER_ON_BUTTON             8      // D8
 #define PIN_BATTERY_VOLTAGE             3      // A3
 #define PIN_BATTERY_CURRENT             4      // A4
