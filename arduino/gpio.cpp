@@ -24,7 +24,6 @@ void initialiseGpio(void) {
 
     // Power Control
     pinMode(PIN_LOW_CURRENT_RELAY, OUTPUT);       // D7
-    pinMode(PIN_POWER_ON_BUTTON, INPUT_PULLUP);   // D8
     
     digitalWrite(PIN_LOW_CURRENT_RELAY, HIGH);
     
