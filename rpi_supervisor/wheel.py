@@ -17,7 +17,7 @@ class Wheel:
 
     def __init__(self):
         # Values stored in the supervisor
-        self.hmMode = modes['NEUTRAL']
+        self.hmMode = Wheel.modes['NEUTRAL']
         self.hmThrottle = 0
         self.aDesiredOrientation = 0
                

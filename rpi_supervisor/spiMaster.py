@@ -2,7 +2,7 @@
 import spidev
 import time
 import RPi.GPIO as GPIO
-import wheel
+from wheel import Wheel
 
 class SPI:
     """
@@ -10,55 +10,60 @@ class SPI:
     These imperatives are sent from the SPI master and
     inform the slave how to behave.
     """
-    commands = { 'RECEIVE_A_ORIENTATION': 0,            # Prepare the slave to receive data from the master
-                 'RECEIVE_HM_STATE': 1,
-                 'RECEIVE_HM_THROTTLE': 2,
-                 'LOAD_A_MEASURED_ORIENTATION': 100,    # Instruct the slave to load data onto its send buffer for the master to read
-                 'LOAD_A_CONTROLLER_OUTPUT': 101
-                 'LOAD_SHUTDOWN_ERROR': 102 }
+    commands = { 'RECEIVE_A_ORIENTATION': chr(0),            # Prepare the slave to receive data from the master
+                 'RECEIVE_HM_STATE': chr(1),
+                 'RECEIVE_HM_THROTTLE': chr(2),
+                 'LOAD_A_MEASURED_ORIENTATION': chr(100),    # Instruct the slave to load data onto its send buffer for the master to read
+                 'LOAD_A_CONTROLLER_OUTPUT': chr(101),
+                 'LOAD_SHUTDOWN_ERROR': chr(102) }
     
     """
     SPI ERROR MESSAGES
     "Errors detected by the slave" are reserved values and cannot be used inside messages
     to the slave or to the master.
     """
-    SLAVE_ERROR_MIN = 252
+    slaveErrorMin = 252
     
-    errors = { 'SLAVE_ECHO_FAILED': 0,                  # Errors detected by the master
-               'MISSING_NUL_TERMINATOR': 1,
-               'MESSAGE_HAS_FORBIDDEN_CHARS': 252,      # Errors detected by the slave
-               'COMMAND_NOT_RECOGNISED': 253,
-               'NOT_READY': 254,
-               'MASTER_ECHO_FAILED': 255 }
+    errors = { 'SLAVE_ECHO_FAILED': chr(0),                  # Errors detected by the master
+               'MISSING_NUL_TERMINATOR': chr(1),
+               'MESSAGE_HAS_FORBIDDEN_CHARS': chr(252),      # Errors detected by the slave
+               'COMMAND_NOT_RECOGNISED': chr(253),
+               'NOT_READY': chr(254),
+               'MASTER_ECHO_FAILED': chr(255) }
     
-    # Dict of errors, containing only error codes detected by the slave. This subset of the "errors"
-    # dict is extracted using a Python "list comprehension"
-    slaveErrors = dict((key, value) for key, value in errors.iteritems() if value >= SLAVE_ERROR_MIN)
-
     # Slave select pins
     ssPins = { 'POWER_CONTROL': 27,
-               wheel.channels['FRONT_LEFT']: 22,
-               wheel.channels['FRONT_RIGHT']: 23,
-               wheel.channels['BACK_LEFT']: 24,
-               wheel.channels['BACK_RIGHT']: 25 }
+               'FRONT_LEFT': 22,
+               'FRONT_RIGHT': 23,
+               'BACK_LEFT': 24,
+               'BACK_RIGHT': 25 }
                
     bufferSize = 32
+    attemptsPerByte = 3
+    
+    # SPI delay between transfers (s)
+    spiDelay = 0.5
 
     def __init__(self, state):
         self.state = state
         
-        # SPI delay between transfers (us)
-        self.spiDelay = 1000
+        # Dict of errors, containing only error codes detected by the slave. This subset of the "errors"
+        # dict is extracted using a Python "list comprehension"
+        self.slaveErrors = dict((key, value) for key, value in SPI.errors.iteritems() if SPI.slaveErrorMin >= 252)
         
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
   
-        for ssPin in ssPins.itervalues():
+        for ssPin in SPI.ssPins.itervalues():
             GPIO.setup(ssPin, GPIO.OUT) # set SS pin as an output
             GPIO.output(ssPin, GPIO.HIGH) # set SS pin to high
 
         self.spi = spidev.SpiDev()
         self.spi.open(0,0)
+        self.spi.mode = 0b00
+        self.spi.cshigh = False
+        self.spi.bits_per_word = 8
+        
         
     
     def sendString(self, channel, command, string):
@@ -66,61 +71,121 @@ class SPI:
         Sends a string across to a SPI slave
         """
         # Convert string into a list of characters
-        buffer = list(string)
+        outgoingBuffer = list(string)
         
         # Trim the string to fit inside the slave's buffer
-        buffer = buffer[:(bufferSize - 1)]
+        outgoingBuffer = outgoingBuffer[:(SPI.bufferSize - 1)]
         
         # NUL terminate the string
-        buffer.append('\0')
+        outgoingBuffer.append('\0')
         
         # Prepend the SPI command to the buffer
-        buffer.insert(0, command)
+        outgoingBuffer.insert(0, SPI.commands[command])
         
         # This prepares the slave for a new SPI operation
-        GPIO.output(ssPins[channel], GPIO.LOW)
+        GPIO.output(SPI.ssPins[channel], GPIO.LOW)
         
-        # If an error is detected, give up straight away.
-        # Move onto the next wheel module and come back to this one.
-        for outgoingByte in buffer:
-            incomingByte = self.transferByte(outgoingByte)
-            
-            self.state.spiErrorCounts[channel]['NUM_TRANSFERS'] += 1
-            
-            if incomingByte in slaveErrors:
-                self.state.spiErrorCounts[channel][incomingByte] += 1
-                break
-            
+        # Used to check slave echo
+        echoByte = '\0'
         
-              
-        GPIO.output(ssPins[channel], GPIO.HIGH) # set SS high
+        completeSuccess = False
         
-    def recieveString(self, command, ss_pin_list_index):
+        try:
+            # Make multiple attempts if the Arduino is busy, then move onto the next Arduino.
+            # All other errors will cause the master to move on immediately.
+            for outgoingByte in outgoingBuffer:
+                for attempt in range(SPI.attemptsPerByte):
+                    incomingByte = self.transferByte(outgoingByte)
+                    
+                    self.state.spiErrorCounts[channel]['NUM_TRANSFERS'] += 1
+                    
+                    if incomingByte == SPI.errors['NOT_READY']:
+                        self.state.spiErrorCounts[channel]['NOT_READY'] += 1
+                    
+                    # No more attempts needed as slave has responded, either with error or with data
+                    else:
+                        break
+                
+                if incomingByte in self.slaveErrors:
+                    self.state.spiErrorCounts[channel][incomingByte] += 1
+                    break
+                
+                # Verify that the slave is echoing our outgoing bytes correctly
+                elif incomingByte != echoByte:
+                    self.state.spiErrorCounts[channel]['SLAVE_ECHO_FAILED'] += 1
+                    break
+                    
+                echoByte = outgoingByte
+                
+            else:
+                # For loop finished with no errors detected! (No breaks)
+                completeSuccess = True
+
+        # This guarantees that slave select goes back to high
+        finally:
+            GPIO.output(SPI.ssPins[channel], GPIO.HIGH)
+            
+        return completeSuccess
+
+        
+    def receiveString(self, channel, command):
         """
         Receives a string from an SPI slave
         The slave must have the string ready to send in a buffer
         When the slave receives the correct command returns the corresponding string
         """
-        ss_pin = self.ss_pin_list[ss_pin_list_index]
-        recieve_byte = [0]
-        recieved_list = []
-        GPIO.output(ss_pin, 0) # set SS low
-        self.transferByteAndWait(command) # Send command asking for string
-        self.transferByteAndWait(0) # Sending dummy data while waiting for response
-        while (recieve_byte[0] !=  3): # 3 = ETX (End of Text) to signify receiving finished 
-            recieve_byte = self.transferByteAndWait(0) # Receive a byte from the slave
-            recieved_list.append(chr(recieve_byte[0])) # Append the character to the list
-            if (len(recieved_list) >= self.recieve_text_limit): # If don't receive end of text after a certain character limit, break
-                recieved_list = []
-                break
-        GPIO.output(ss_pin, 1) # set SS high
+        incomingBuffer = []
         
-        if (len(recieved_list) != 0):
-            del recieved_list[-1] # Delete the end of text command
-            recieved_string = ''.join(recieved_list) # Join into a string
-        else:
-            recieved_string = "End of Text not recieved"
-        return recieved_string
+        GPIO.output(SPI.ssPins[channel], GPIO.LOW)
+        echoByte = self.transferByte(SPI.commands[command])
+        
+        completeSuccess = False
+        
+        try:
+            # Make multiple attempts if the Arduino is busy, then move onto the next Arduino.
+            # All other errors will cause the master to move on immediately.
+            while True:
+                for attempt in range(SPI.attemptsPerByte):
+                    # Echo the received bytes to enable verification by the slave
+                    incomingByte = self.transferByte(echoByte)
+                    self.state.spiErrorCounts[channel]['NUM_TRANSFERS'] += 1
+                    
+                    if incomingByte == SPI.errors['NOT_READY']:
+                        self.state.spiErrorCounts[channel]['NOT_READY'] += 1
+                    
+                    # No more attempts needed as slave has responded, either with error or with data
+                    else:
+                        break
+                    
+                print(ord(incomingByte))
+                        
+                if incomingByte in self.slaveErrors:
+                    self.state.spiErrorCounts[channel][incomingByte] += 1
+                    break
+                    
+                # We have received the last character.
+                # Don't actually append the NUL terminator to the buffer, because Python doesn't
+                # NUL terminate its strings.
+                if incomingByte == '\0':
+                    completeSuccess = True
+                    break
+                
+                elif len(incomingBuffer) >= SPI.bufferSize:
+                    self.state.spiErrorCounts[channel]['MISSING_NUL_TERMINATOR'] += 1
+                    break
+                    
+                incomingBuffer.append(incomingByte)
+                echoByte = incomingByte
+                
+        
+        # This guarantees that slave select goes back to high            
+        finally:
+            GPIO.output(SPI.ssPins[channel], GPIO.HIGH)
+
+        if completeSuccess:
+            return "".join(incomingBuffer)
+            
+        return None
         
         
     def transferByte(self, outgoingByte):
@@ -134,7 +199,14 @@ class SPI:
         transferByteAndWait(DUMMY)
         RECIEVED_BYTE = transferByteAndWait(DUMMY)
         """
-        return self.spi.xfer2([outgoingByte])
+        time.sleep(SPI.spiDelay)
+        
+        # If outgoingByte passed in as a char, convert to an ASCII int
+        outgoingByte = ord(outgoingByte)
+        incomingByte = self.spi.xfer2([outgoingByte])
+        
+        # Convert the int value into a char and return it
+        return chr(incomingByte.pop())
         
     
     def readArduinoState(self, channel):

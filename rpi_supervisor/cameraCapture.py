@@ -77,6 +77,7 @@ class Camera:
         
         # Else statement executes if we do not reach the break statement.
         else:
+            print("Unable to initialise camera.")
             return
                 
                 
