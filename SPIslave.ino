@@ -93,12 +93,8 @@ volatile boolean ignore_message;
 boolean init_complete;
 byte command;
 
-// start of transaction, no command yet
-void ss_falling ()
-{
-  command = 0;
-}  // end of interrupt service routine (ISR) ss_falling
-
+// For SS falling edge detection
+volatile boolean ssPrevState;
 
 /* 
  * Outputs a char array in the format "0007", for a value of 7
@@ -289,6 +285,16 @@ void setup (void)
   // Set pin 9 PWM (Timer 1) switching frequency to 31250 Hz
   TCCR1B = TCCR1B & 0b11111000 | 0x01;
   
+  // Enable pin change interrupts on pin PCINT2 (slave select)
+  PCICR = PCICR & 0b11111000 | 0b00000001;
+  PCMSK0 = PCMSK0 & 0b00000000 | 0b00000100;
+  
+  // turn on SPI in slave mode
+  SPCR |= bit (SPE);
+  
+  // turn on interrupts
+  SPCR |= _BV(SPIE);
+  
   analogWrite(PIN_HM_THROTTLE, 0);
   digitalWrite(PIN_HM_BRAKE, HIGH);
   digitalWrite(PIN_HM_REVERSE, HIGH);
@@ -299,13 +305,8 @@ void setup (void)
   actuatorController.SetMode(AUTOMATIC);
   actuatorController.SetOutputLimits(ACTUATOR_PWM_MAX * -1, ACTUATOR_PWM_MAX);
   
-  // turn on SPI in slave mode
-  SPCR |= bit (SPE);
+  ssPrevState = digitalRead(SS);
   
-   // turn on interrupts
-  SPCR |= _BV(SPIE);
-  // interrupt for SS falling edge
-  attachInterrupt(0, ss_falling, FALLING);
   Serial.println("Setup complete!");
 }
 
@@ -325,6 +326,19 @@ void sendNextByteInBuffer(void)
   }
 
   SPDR = c;
+}
+
+
+// Pin change on PCINT2 (slave select)
+ISR (PCINT0_vect) {
+  boolean ssCurrentState = digitalRead(SS);
+  
+  // Detect falling edge
+  if (ssPrevState && !ssCurrentState) {
+    command = 0;
+  }
+  
+  ssPrevState = ssCurrentState;
 }
 
 
