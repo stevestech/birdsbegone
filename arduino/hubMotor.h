@@ -8,6 +8,15 @@
 #define STATE_FORWARD                   '2'
 #define STATE_REVERSE                   '3'
 
+// Hub motor pins
+#define PIN_HM_SPEED_SENSE              2      // D2
+#define PIN_HM_BRAKE                    4      // D4
+#define PIN_HM_THROTTLE                 5      // D5 Timer0B
+#define PIN_HM_REVERSE                  7      // D6
+
+#define PWM_MAX                         255
+#define PWM_MIN                         0
+
 
 class HubMotor {
 private:
@@ -15,6 +24,7 @@ private:
     uint8_t throttle;
     
 public:
+    HubMotor(void);
     void update(void);
 }
 
