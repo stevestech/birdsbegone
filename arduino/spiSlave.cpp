@@ -8,7 +8,7 @@
 // Constructor
 SpiSlave::SpiSlave(Actuator *actuator, HubMotor *hubMotor) {
     // Used to hold data when sending or receiving a string
-    stringBuffer = new char[SPI_BUFFER_SIZE];
+    stringBuffer = new char[STRING_BUFFER_SIZE];
     
     // When a string is being read, this indicates what the string should do once received.
     // It is set by the master before sending the string. Unless the master has indicated that
