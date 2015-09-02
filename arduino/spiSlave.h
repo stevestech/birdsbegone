@@ -80,7 +80,6 @@ private:
     volatile uint8_t purposeForIncomingString;
     volatile char *stringBuffer;
     volatile uint8_t stringBufferIndex;
-    volatile bool stringBufferReady;
     Actuator *actuator;
     HubMotor *hubMotor;
     
