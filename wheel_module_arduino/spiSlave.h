@@ -110,8 +110,8 @@ class SpiSlave {
         Actuator *actuator;
         HubMotor *hubMotor;
         
-        void processIncomingCommand();
-        void processIncomingAscii();
+        void processIncomingCommand(void);
+        void processIncomingAscii(void);
         
     public:
         SpiSlave(void);
