@@ -11,7 +11,7 @@
 // The following globals are accessed from inside the SPI_STC ISR.
 volatile uint8_t incomingByte;
 
-// The SPI_STC interrupt service routing will not write to incomingByte while this
+// The SPI_STC interrupt service routine will not write to incomingByte while this
 // flag is true.
 volatile bool incomingByteLocked;
 
