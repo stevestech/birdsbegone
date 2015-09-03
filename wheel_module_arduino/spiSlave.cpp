@@ -187,7 +187,7 @@ void SpiSlave::processIncomingAscii() {
     stringBuffer.appendByte(&incomingByte);
     
     // If this is the last byte in the string, perform any necessary actions
-    if (incomingByte == ASCII_NUL) {
+    if (stringBuffer.isReceivingComplete()) {
         switch(purposeForIncomingString) {
             case RECEIVE_A_ORIENTATION:
                 // Update the steering PID controller with a new setpoint from the SPI master
