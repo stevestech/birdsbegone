@@ -55,7 +55,7 @@ class Buffer {
         char popNextByte(void);
         char getPrevByte(void);
         
-        void prepareForIncomingData(void) {        
+        void prepareForIncomingData(void);
         void appendByte(char newByte);
         bool isReceiving(void);
         bool isReceivingComplete(void);
