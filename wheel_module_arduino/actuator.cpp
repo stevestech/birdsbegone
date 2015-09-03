@@ -65,7 +65,7 @@ void Actuator::update(void) {
     controller.Compute();
     
     // Provide controller output to steering actuator driver
-    setMotor(controllerOutput);
+    setMotor();
 }
 
 
