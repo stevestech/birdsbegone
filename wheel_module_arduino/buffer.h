@@ -11,7 +11,7 @@
  * It is not designed to be thread-safe.
  *
  * You can either write to, or read from this buffer, but not both
- * simultaneously. The outgoingMode flag indicates which mode
+ * simultaneously. The receive and sending flags indicate which mode
  * the buffer is currently operating in.
  *
  * When writing to the buffer these functions are called:
