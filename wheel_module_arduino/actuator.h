@@ -44,21 +44,22 @@
 #define GAIN_DIFFERENTIAL               0
 
 class Actuator {
-private:
-    double desiredOrientation;
-    double measuredOrientation;
-    double controllerOutput;
+    private:
+        double desiredOrientation;
+        double measuredOrientation;
+        double controllerOutput;
+            
+        PID* controller;
         
-    PID* controller;
-    
-    void setMotor(void);
-    
-public:
-    Actuator(void);
-    ~Actuator(void);
-    void update(void);
-    uint16_t getMeasuredOrientation(void);
-    void setDesiredOrientation(uint16_t newOrientation);
+        void setMotor(void);
+        
+    public:
+        Actuator(void);
+        ~Actuator(void);
+        void update(void);
+        double *getMeasuredOrientation(void);
+        double *getControllerOutput(void);
+        void setDesiredOrientation(uint16_t *newOrientation);
 };
 
 #endif

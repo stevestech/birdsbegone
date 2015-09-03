@@ -84,13 +84,16 @@ void Actuator::setMotor(void) {
 }
 
 
-uint16_t Actuator::getMeasuredOrientation(void) {
-    return (uint16_t) measuredOrientation;
+double *Actuator::getMeasuredOrientation(void) {
+    return &measuredOrientation;
 }
 
 
-void Actuator::setDesiredOrientation(uint16_t newOrientation) {
-    desiredOrientation = newOrientation;
+void Actuator::setDesiredOrientation(uint16_t *newOrientation) {
+    desiredOrientation = *newOrientation;
 }
 
 
+double *Actuator::getControllerOutput(void) {
+    return &controllerOutput;
+}

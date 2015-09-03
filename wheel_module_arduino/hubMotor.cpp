@@ -10,10 +10,10 @@ HubMotor::HubMotor(void) {
     /*
      * Setup GPIO
      **/
-    pinMode(PIN_HM_SPEED_SENSE, INPUT);           // D2 INT0
-    pinMode(PIN_HM_BRAKE, OUTPUT);                // D4
-    pinMode(PIN_HM_THROTTLE, OUTPUT);             // D5 TIMER0B
-    pinMode(PIN_HM_REVERSE, OUTPUT);              // D6
+    pinMode(PIN_HM_SPEED_SENSE, INPUT);
+    pinMode(PIN_HM_BRAKE, OUTPUT);
+    pinMode(PIN_HM_THROTTLE, OUTPUT);
+    pinMode(PIN_HM_REVERSE, OUTPUT);
     
     analogWrite(PIN_HM_THROTTLE, 0);
     
@@ -52,22 +52,21 @@ void HubMotor::update(void) {
 }
 
 
-void HubMotor::setThrottle(uint8_t newThrottle) {
-    throttle = newThrottle;
+void HubMotor::setThrottle(uint8_t *newThrottle) {
+    throttle = *newThrottle;
 }
 
 
-void HubMotor::setState(char newState) {
-    switch(newState) {
-    case STATE_NEUTRAL:
-    case STATE_BRAKING:
-    case STATE_FORWARD:
-    case STATE_REVERSE:
-        state = newState;
-        break;
-        
-    default:
+void HubMotor::setState(uint8_t *newState) {
+    if ((*newState == STATE_NEUTRAL) ||
+        (*newState == STATE_BRAKING) ||
+        (*newState == STATE_FORWARD) ||
+        (*newState == STATE_REVERSE)) {
+            
+        state = *newState;
+    }
+    
+    else {
         state = STATE_NEUTRAL;
-        break;
     }
 }
