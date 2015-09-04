@@ -8,19 +8,36 @@
 #include "stringToUint.h"
 
 
+// avr-g++ initialises globals and statics to 0.
+// These globals are accessed by interrupt service routines.
+volatile uint8_t incomingByte;
+volatile uint8_t outgoingByte;
+
+// The SPI_STC interrupt service routine will not write to incomingByte while this
+// flag is true.
+volatile bool incomingByteLocked;
+
+
+// Used to detect a falling edge on slave select.
+volatile bool slaveSelectPrevValue;
+
+// Flag set true after a falling edge has been detected.
+volatile bool slaveSelectFallingEdge;
+
+
 
 // SPI has finished reading a byte, and is ready to send one back to the master
 ISR (SPI_STC_vect) {
     // Don't write to incomingByte unless the update() method is ready for a new one.
-    if (SpiSlave::incomingByteLocked) {
+    if (incomingByteLocked) {
         SPDR = NOT_READY;
     }
     
     else {
-        SpiSlave::incomingByte = SPDR;
-        SPDR = SpiSlave::outgoingByte;
+        incomingByte = SPDR;
+        SPDR = outgoingByte;
         
-        SpiSlave::incomingByteLocked = true;
+        incomingByteLocked = true;
     }
 }
 
@@ -31,17 +48,17 @@ ISR (PCINT0_vect) {
     bool slaveSelect = digitalRead(SS);
     
     // Detect falling edge
-    if (!slaveSelect && SpiSlave::slaveSelectPrevValue) {
-        SpiSlave::slaveSelectFallingEdge = true;        
+    if (!slaveSelect && slaveSelectPrevValue) {
+        slaveSelectFallingEdge = true;        
     }
     
-    SpiSlave::slaveSelectPrevValue = slaveSelect;
+    slaveSelectPrevValue = slaveSelect;
 }
 
 
 // Constructor
 SpiSlave::SpiSlave(Actuator *actuator, HubMotor *hubMotor) {
-    stringBuffer = new StringBuffer(STRING_BUFFER_SIZE);
+    stringBuffer = new Buffer(STRING_BUFFER_SIZE);
     
     this->actuator = actuator;
     this->hubMotor = hubMotor;
@@ -52,7 +69,7 @@ SpiSlave::SpiSlave(Actuator *actuator, HubMotor *hubMotor) {
     pinMode(SS, INPUT);                           // D10
     pinMode(MOSI, INPUT);                         // D11
     pinMode(MISO, OUTPUT);                        // D12
-    pinMode(SCLK, INPUT);                         // D13
+    pinMode(SCK, INPUT);                          // D13
     
     slaveSelectPrevValue = digitalRead(SS);
     
@@ -121,7 +138,7 @@ void SpiSlave::update(void) {
             #endif
             
             if (!stringBuffer->isReceivingComplete()) {
-                stringBuffer->appendByte(&incomingByte);
+                stringBuffer->appendByte(incomingByte);
                 
                 if (stringBuffer->isReceivingComplete()) {
                     // Woot! We got the string, now do something with it.
@@ -188,12 +205,12 @@ void SpiSlave::executeIncomingCommand() {
 }
 
 
-void SpiSlave::executeReceivedString() {
+void SpiSlave::executeReceivedString(void) {
     switch(purposeForIncomingString) {
         case RECEIVE_A_ORIENTATION:
             // Update the steering PID controller with a new setpoint from the SPI master
             uint16_t newSetpoint;
-            if stringToUint(stringBuffer->buffer, &newSetpoint) {
+            if (stringToUint(stringBuffer->buffer, &newSetpoint)) {
                 actuator->setDesiredOrientation(&newSetpoint);
             }
             break;
@@ -201,7 +218,7 @@ void SpiSlave::executeReceivedString() {
         case RECEIVE_HM_STATE:
             // Update the hub motor state (neutral, braking, forward, reverse)
             uint8_t newState;
-            if stringToUint(stringBuffer->buffer, &newState) {
+            if (stringToUint(stringBuffer->buffer, &newState)) {
                 hubMotor->setState(&newState);
             }
             break;
@@ -209,7 +226,7 @@ void SpiSlave::executeReceivedString() {
         case RECEIVE_HM_THROTTLE:
             // Update the hub motor throttle (0 - 255)
             uint8_t newThrottle;
-            if stringToUint(stringBuffer->buffer, &newThrottle) {
+            if (stringToUint(stringBuffer->buffer, &newThrottle)) {
                 hubMotor->setThrottle(&newThrottle);
             }
             break;

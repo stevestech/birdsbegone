@@ -1,4 +1,3 @@
-#include <PID_v1.h>
 #include <Arduino.h>
 #include <stdint.h>
 
@@ -26,21 +25,21 @@ Actuator::Actuator(void) {
                          GAIN_DIFFERENTIAL,
                          DIRECT);
                          
-    controller.SetMode(AUTOMATIC);
-    controller.SetOutputLimits(maxControllerOutput * -1, maxControllerOutput);
+    controller->SetMode(AUTOMATIC);
+    controller->SetOutputLimits(maxControllerOutput * -1, maxControllerOutput);
     
     /*
      * Setup GPIO
      **/
     // Set pin 9 PWM (Timer 1) switching frequency to 31250 Hz, prescaler = 0b001
-    setBit(TCCR1B, CS00);
-    clearBit(TCCR1B, CS01);
-    clearBit(TCCR1B, CS02);
+    bitSet(TCCR1B, CS00);
+    bitClear(TCCR1B, CS01);
+    bitClear(TCCR1B, CS02);
     
     // Set pin 3 PWM (Timer 2) switching frequency to 31250 Hz, prescaler = 0b001
-    setBit(TCCR2B, CS00);
-    clearBit(TCCR2B, CS01);
-    clearBit(TCCR2B, CS02);
+    bitSet(TCCR2B, CS00);
+    bitClear(TCCR2B, CS01);
+    bitClear(TCCR2B, CS02);
     
     // Actuator Pins
     pinMode(PIN_A_THROTTLE_CW, OUTPUT);           // D3 TIMER2B
@@ -62,7 +61,7 @@ void Actuator::update(void) {
     measuredOrientation = analogRead(PIN_A_POSITION_SENSE);
     
     // Run the PID controller to get a control signal
-    controller.Compute();
+    controller->Compute();
     
     // Provide controller output to steering actuator driver
     setMotor();

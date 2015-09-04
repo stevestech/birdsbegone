@@ -55,7 +55,7 @@ class Buffer {
         bool isReceiving(void);
         bool isReceivingComplete(void);
         bool isSending(void);
-}
+};
 
 
 #endif

@@ -138,23 +138,6 @@
 
 class SpiSlave {
     private:
-        // avr-g++ initialises globals and statics to 0.
-        // Static volatile members are able to be accessed by interrupt service routines.
-        static volatile uint8_t incomingByte;
-        static volatile uint8_t outgoingByte;
-
-        // The SPI_STC interrupt service routine will not write to incomingByte while this
-        // flag is true.
-        static volatile bool incomingByteLocked;
-
-
-        // Used to detect a falling edge on slave select.
-        static volatile bool slaveSelectPrevValue;
-        
-        // Flag set true after a falling edge has been detected.
-        static volatile bool slaveSelectFallingEdge;
-        
-        
         // Used to send an error message back to the master.
         bool errorCondition;
 
@@ -173,9 +156,10 @@ class SpiSlave {
         void executeReceivedString(void);
         
     public:
-        SpiSlave(void);
+        SpiSlave(Actuator *actuator, HubMotor *hubMotor);
+        ~SpiSlave();
         void update(void);
-}
+};
     
 
 #endif

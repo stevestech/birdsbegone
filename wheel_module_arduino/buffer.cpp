@@ -102,7 +102,7 @@ void Buffer::prepareForIncomingData(void) {
 }
 
 
-void Buffer::appendByte(char *newByte) {
+void Buffer::appendByte(char newByte) {
     // Append newValue to the buffer if there is room for it, and we haven't
     // already received the nul terminator.
     if ((receiving) &&
@@ -110,11 +110,11 @@ void Buffer::appendByte(char *newByte) {
         (index < sizeof(buffer))) {
             
         // Master has sent the nul terminator, so don't receive any more bytes.
-        if (*newByte == ASCII_NUL) {
+        if (newByte == ASCII_NUL) {
             receivingComplete = true;
         }
     
-        buffer[index++] = *newByte;
+        buffer[index++] = newByte;
     }
 }
 

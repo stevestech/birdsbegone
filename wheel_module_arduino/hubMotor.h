@@ -28,7 +28,7 @@ class HubMotor {
         void update(void);
         void setThrottle(uint8_t *newThrottle);
         void setState(uint8_t *newState);
-}
+};
 
 
 #endif
