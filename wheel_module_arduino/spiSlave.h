@@ -2,6 +2,31 @@
 #define SPISLAVE_H
 
 /*
+ * INSTRUCTIONS FOR ADDING SPI OPERATIONS
+ *
+ * Make a #define with a unique uint8_t identifier for your operation in the
+ * SPI COMMANDS section below in this header file. 
+ *
+ * Add a case to the switch statement in the "executeIncomingCommand" method
+ * which contains the code to be executed upon receiving your command.
+ *
+ * If your operation requires sending data to the master:
+ * ------------------------------------------------------
+ * The code that you add to "executeIncomingCommand" must include a call to
+ * stringBuffer->loadWithOutgoingData. This method will accept any data you
+ * provide and send it to the master.
+ *
+ * If your operation requires receiving data from the master:
+ * ----------------------------------------------------------
+ * The code that you add to "executeIncomingCommand" must include a call to
+ * stringBuffer->prepareForIncomingData, and must also set the "purposeForIncomingString"
+ * member to your command's unique identifier.
+ *
+ * In addition, you must also add a case to the "executeReceivedString" method,
+ * with code to be executed once the string has been received.
+ **/
+
+/*
  * DESCRIPTION OF COMMUNICATION PROTOCOL
  *
  * At the start of each operation the master pulls slave select low,
@@ -59,6 +84,10 @@
 #include "hubMotor.h"
 #include "buffer.h"
 
+// When enabled, incoming ascii and command bytes will be echoed back to the master.
+// When sending ascii to the master, the master's echo responses will be checked.
+#define ENABLE_ECHO_VERIFICATION
+
 // The largest expected data string must fit inside this buffer
 #define STRING_BUFFER_SIZE              32
 
@@ -66,6 +95,8 @@
 #define EMPTY_BYTE                      0
 
 #define NO_ERROR                        0
+
+#define NO_INCOMING_STRING              0
 
 
 /*
@@ -97,9 +128,9 @@
  * These imperatives are sent from the SPI master and
  * inform the slave how to behave.
  **/ 
-#define RECEIVE_A_ORIENTATION           0
-#define RECEIVE_HM_STATE                1
-#define RECEIVE_HM_THROTTLE             2
+#define RECEIVE_A_ORIENTATION           1
+#define RECEIVE_HM_STATE                2
+#define RECEIVE_HM_THROTTLE             3
  
 #define LOAD_A_MEASURED_ORIENTATION     100
 #define LOAD_A_CONTROLLER_OUTPUT        101
@@ -107,11 +138,39 @@
 
 class SpiSlave {
     private:
+        // avr-g++ initialises globals and statics to 0.
+        // Static volatile members are able to be accessed by interrupt service routines.
+        static volatile uint8_t incomingByte;
+        static volatile uint8_t outgoingByte;
+
+        // The SPI_STC interrupt service routine will not write to incomingByte while this
+        // flag is true.
+        static volatile bool incomingByteLocked;
+
+
+        // Used to detect a falling edge on slave select.
+        static volatile bool slaveSelectPrevValue;
+        
+        // Flag set true after a falling edge has been detected.
+        static volatile bool slaveSelectFallingEdge;
+        
+        
+        // Used to send an error message back to the master.
+        bool errorCondition;
+
+        // Used to hold data when sending or receiving a string.
+        Buffer *stringBuffer;
+
+        // When a string is being read, this indicates what the string should do once received.
+        // It is set by the master before sending the string.
+        uint8_t purposeForIncomingString;
+    
         Actuator *actuator;
         HubMotor *hubMotor;
         
-        void processIncomingCommand(void);
-        void processIncomingAscii(void);
+        void reset(void);
+        void executeIncomingCommand(void);
+        void executeReceivedString(void);
         
     public:
         SpiSlave(void);

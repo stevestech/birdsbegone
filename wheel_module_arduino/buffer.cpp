@@ -7,16 +7,7 @@
 
 Buffer::Buffer(uint8_t size) {
     buffer = new char[size];
-    index = 0;
-    
-    // This flag determines if bytes can be read from the buffer.
-    sending = false;
-    
-    // This flag determines if bytes can be written to the buffer.
-    receiving = false;
-    
-    // This flag indicates if the incoming string has been nul terminated yet.
-    receivingComplete = false;
+    reset();
 }
 
 
@@ -26,12 +17,11 @@ Buffer::~Buffer(void) {
 
 
 // Reset the index and all flags.
-// This function is not permitted to be called from outside of
-// the PCINT0 interrupt service routine.
 void Buffer::reset(void) {
     index = 0;
     sending = false;
     receiving = false;
+    sendingComplete = false;
     receivingComplete = false;
 }
 
@@ -75,12 +65,17 @@ void Buffer::loadWithOutgoingData(uint8_t *data) {
 }
 
 
-// This function is not permitted to be called from outside of
-// the SPI_STC interrupt service routine.
 char Buffer::popNextByte(void) {
     // If data has been loaded onto the buffer using load(), then
     // return next byte until the index reaches the end of the buffer
-    if ((sending) && (index < sizeof(buffer))) {
+    if ((sending) &&
+        (!sendingComplete) &&
+        (index < sizeof(buffer))) {
+            
+        if (buffer[index] == ASCII_NUL) {
+            sendingComplete = true;
+        }
+        
         return buffer[index++];
     }
     
@@ -114,12 +109,12 @@ void Buffer::appendByte(char *newByte) {
         (!receivingComplete) &&
         (index < sizeof(buffer))) {
             
-        buffer[index++] = *newByte;
-    }
+        // Master has sent the nul terminator, so don't receive any more bytes.
+        if (*newByte == ASCII_NUL) {
+            receivingComplete = true;
+        }
     
-    // Master has sent the nul terminator, so don't receive any more bytes.
-    if (*newByte == ASCII_NUL) {
-        receivingComplete = true;
+        buffer[index++] = *newByte;
     }
 }
 

@@ -4,12 +4,6 @@
 /*
  * LIMITATIONS
  *
- * popNextByte() can ONLY be called from the SPI_STC interrupt service routine.
- * It is not designed to be thread-safe.
- *
- * reset() can ONLY be called from the PCINT0 interrupt service routine.
- * It is not designed to be thread-safe.
- *
  * You can either write to, or read from this buffer, but not both
  * simultaneously. The receiving and sending flags indicate which mode
  * the buffer is currently operating in.
@@ -40,6 +34,7 @@ class Buffer {
         volatile bool receiving;
         volatile bool sending;
         bool receivingComplete;
+        bool sendingComplete;
         
     public:
         char *buffer;
