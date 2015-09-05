@@ -26,16 +26,16 @@
  * 
  * Higher value, less deadband.
  * Observed valid range @ fs=31.25kHz: 0 to 72
- * Recommended @ fs=31.25kHz: 60
+ * Recommended @ fs=31.25kHz: 55
  *
  *
  * ACTUATOR_PWM_MAX limits the max duty cycle that can be applied to the actuator driver.
  * The PID controller will output between 0 and (ACTUATOR_PWM_MAX - ACTUATOR_PWM_MIN).
  * This maps to a PWM output between ACTUATOR_PWM_MIN and ACTUATOR_PWM_MAX.
  * 
- * Valid range: (ACTUATOR_PWM_MIN + 1) to (PWM_MAX - ACTUATOR_PWM_OFFSET)
+ * Valid range: (ACTUATOR_PWM_MIN + 1) to (PWM_MAX - ACTUATOR_PWM_MIN)
  **/
-#define ACTUATOR_PWM_MIN                60
+#define ACTUATOR_PWM_MIN                55
 #define ACTUATOR_PWM_MAX                127
 
 // Actuator PID gains

@@ -23,7 +23,7 @@ Actuator::Actuator(void) {
                          GAIN_PROPORTIONAL,
                          GAIN_INTEGRAL,
                          GAIN_DIFFERENTIAL,
-                         DIRECT);
+                         REVERSE);
                          
     controller->SetMode(AUTOMATIC);
     controller->SetOutputLimits(maxControllerOutput * -1, maxControllerOutput);

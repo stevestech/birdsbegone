@@ -5,22 +5,17 @@
 #include "hubMotor.h"
 #include "spiSlave.h"
 
-Actuator *actuator;
-HubMotor *hubMotor;
-SpiSlave *spiSlave;
+Actuator actuator;
+HubMotor hubMotor;
+SpiSlave spiSlave(&actuator, &hubMotor);
 
     
-void setup(void)
-{
-    actuator = new Actuator();
-    hubMotor = new HubMotor();
-    spiSlave = new SpiSlave(actuator, hubMotor);
+void setup(void) {
 }
 
 
-void loop(void)
-{
-    spiSlave->update();
-    actuator->update();
-    hubMotor->update();
+void loop(void) {
+    spiSlave.update();
+    actuator.update();
+    hubMotor.update();
 }
