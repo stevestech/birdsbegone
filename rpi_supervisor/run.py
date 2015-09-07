@@ -6,13 +6,12 @@ import RPi.GPIO as GPIO
 
 from networking import Networking
 from state import State
-from ArduinoSPI import SPI
+from spiMaster import SPI
 from cameraCapture import Camera
 
+
 def goodbye(signum, frame):
-    spi.running = False
-    networking.running = False
-    camera.running = False
+    state.running = False
 
     print("\nSPI thread is stopping...")
     spiThread.join()
@@ -48,10 +47,3 @@ cameraThread = threading.Thread(target=camera.run)
 networkThread.start()
 spiThread.start()
 cameraThread.start()
-
-if __name__ == "__main__":
-    # Block so that the program doesn't terminate. Not necessary if running
-    # from the interpreter ("import run" will execute the program and allow
-    # access to member variables while running).
-    while True:
-        time.sleep(1)

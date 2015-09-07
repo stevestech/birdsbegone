@@ -100,7 +100,7 @@
 
 
 /*
- * SLAVE ERROR TYPES
+ * SLAVE SPI ERROR TYPES
  *
  * These are sent to the master to indicate an error. Any strings sent from the slave cannot
  * contain any of these characters.
@@ -123,17 +123,28 @@
 
 
 /*
+ * SHUTDOWN ERROR CODES
+ *
+ * Used by the master to query if anything has gone wrong in hardware.
+ **/
+ 
+#define ALL_OK                              0
+#define UNSAFE_ORIENTATION_SHUTDOWN         1
+
+
+/*
  * SPI COMMANDS
  *
  * These imperatives are sent from the SPI master and
  * inform the slave how to behave.
  **/ 
-#define RECEIVE_A_ORIENTATION           1
-#define RECEIVE_HM_STATE                2
-#define RECEIVE_HM_THROTTLE             3
+#define RECEIVE_A_ORIENTATION           0
+#define RECEIVE_HM_STATE                1
+#define RECEIVE_HM_THROTTLE             2
  
 #define LOAD_A_MEASURED_ORIENTATION     100
 #define LOAD_A_CONTROLLER_OUTPUT        101
+#define LOAD_SHUTDOWN_ERROR             102
 
 
 class SpiSlave {
@@ -154,6 +165,7 @@ class SpiSlave {
         void reset(void);
         void executeIncomingCommand(void);
         void executeReceivedString(void);
+        uint8_t getShutdownError(void);
         
     public:
         SpiSlave(Actuator *actuator, HubMotor *hubMotor);

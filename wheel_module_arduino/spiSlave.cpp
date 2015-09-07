@@ -198,6 +198,10 @@ void SpiSlave::executeIncomingCommand() {
             stringBuffer->loadWithOutgoingData(actuator->getControllerOutput());
             break;
             
+        case LOAD_SHUTDOWN_ERROR:
+            stringBuffer->loadWithOutgoingData(getShutdownError());
+            break;
+            
         default:
             errorCondition = COMMAND_NOT_RECOGNISED;
             break;
@@ -230,5 +234,16 @@ void SpiSlave::executeReceivedString(void) {
                 hubMotor->setThrottle(&newThrottle);
             }
             break;
+    }    
+}
+
+
+uint8_t SpiSlave::getShutdownError(void) {
+    if (actuator->unsafeOrientation) {
+        return UNSAFE_ORIENTATION_SHUTDOWN;
+    }
+    
+    else {
+        return ALL_OK;
     }    
 }

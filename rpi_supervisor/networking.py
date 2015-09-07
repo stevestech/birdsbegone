@@ -3,8 +3,6 @@ import json
 
 class Networking:
     def __init__(self, state, port=1234):
-        self.running = True
-        
         # Which port to connect to
         self.port = port
         
@@ -20,11 +18,11 @@ class Networking:
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # Reuse the same address to stop those pesky [Errno 98] Address already in use
         self.serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.serversocket.bind(('localhost', self.port))        
+        self.serversocket.bind(('0.0.0.0', self.port))        
         self.serversocket.listen(5)
         self.serversocket.settimeout(2)        
         
-        while self.running:
+        while self.state.running:
             try:
                 client, address = self.serversocket.accept()
                 

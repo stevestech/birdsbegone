@@ -6,6 +6,9 @@
 // Actuator pins
 #define PIN_A_THROTTLE_CW               3      // D3 Timer2B
 #define PIN_A_THROTTLE_ACW              9      // D9 Timer1A
+#define PIN_A_ENABLE_CW                 0      // D0
+#define PIN_A_ENABLE_ACW                1      // D1
+
 #define PIN_A_POSITION_SENSE            0      // A0
 #define PIN_A_STATUS_L                  1      // A1
 #define PIN_A_STATUS_R                  2      // A2
@@ -35,25 +38,34 @@
  * 
  * Valid range: (ACTUATOR_PWM_MIN + 1) to (PWM_MAX - ACTUATOR_PWM_MIN)
  **/
-#define ACTUATOR_PWM_MIN                55
-#define ACTUATOR_PWM_MAX                127
+#define ACTUATOR_PWM_MIN                    55
+#define ACTUATOR_PWM_MAX                    127
+
+// Won't accept setpoints from the master outside of these limits
+#define WHEEL_ORIENTATION_LIMIT_MIN         400
+#define WHEEL_ORIENTATION_LIMIT_MAX         600
+
+// Will shutdown actuator motor if wheel orientation found outside these limits
+#define WHEEL_ORIENTATION_SHUTDOWN_MIN      300
+#define WHEEL_ORIENTATION_SHUTDOWN_MAX      700
 
 // Actuator PID gains
-#define GAIN_PROPORTIONAL               1
-#define GAIN_INTEGRAL                   0
-#define GAIN_DIFFERENTIAL               0
+#define GAIN_PROPORTIONAL                   1
+#define GAIN_INTEGRAL                       0
+#define GAIN_DIFFERENTIAL                   0
 
 class Actuator {
     private:
         double desiredOrientation;
         double measuredOrientation;
         double controllerOutput;
-            
         PID* controller;
         
         void setMotor(void);
         
     public:
+        bool unsafeOrientation;
+        
         Actuator(void);
         ~Actuator(void);
         void update(void);

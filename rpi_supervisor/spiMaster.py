@@ -4,57 +4,96 @@ import time
 import RPi.GPIO as GPIO
 import wheel
 
-class Commands:
-    SET_STATE = 'A'
-    SET_THROTTLE = 'B'
-    SET_ANGLE = 'C'
-    
-    GET_MEASURED_ANGLE = 17
-    GET_ACTUATOR = 18
-
-
 class SPI:
-    def __init__(self, state, ss_pin_list=[25, 20, 26, 19], spi_delay=1000):
-        """
-        Handle SPI communication with a slave
-        Note the slave must be programmed in a specific way to work with this code
-        """
-        self.running = True
-        self.recieve_text_limit = 10
-  
+    """
+    SLAVE COMMANDS
+    These imperatives are sent from the SPI master and
+    inform the slave how to behave.
+    """
+    commands = { 'RECEIVE_A_ORIENTATION': 0,            # Prepare the slave to receive data from the master
+                 'RECEIVE_HM_STATE': 1,
+                 'RECEIVE_HM_THROTTLE': 2,
+                 'LOAD_A_MEASURED_ORIENTATION': 100,    # Instruct the slave to load data onto its send buffer for the master to read
+                 'LOAD_A_CONTROLLER_OUTPUT': 101
+                 'LOAD_SHUTDOWN_ERROR': 102 }
+    
+    """
+    SPI ERROR MESSAGES
+    "Errors detected by the slave" are reserved values and cannot be used inside messages
+    to the slave or to the master.
+    """
+    SLAVE_ERROR_MIN = 252
+    
+    errors = { 'SLAVE_ECHO_FAILED': 0,                  # Errors detected by the master
+               'MISSING_NUL_TERMINATOR': 1,
+               'MESSAGE_HAS_FORBIDDEN_CHARS': 252,      # Errors detected by the slave
+               'COMMAND_NOT_RECOGNISED': 253,
+               'NOT_READY': 254,
+               'MASTER_ECHO_FAILED': 255 }
+    
+    # Dict of errors, containing only error codes detected by the slave. This subset of the "errors"
+    # dict is extracted using a Python "list comprehension"
+    slaveErrors = dict((key, value) for key, value in errors.iteritems() if value >= SLAVE_ERROR_MIN)
+
+    # Slave select pins
+    ssPins = { 'POWER_CONTROL': 27,
+               wheel.channels['FRONT_LEFT']: 22,
+               wheel.channels['FRONT_RIGHT']: 23,
+               wheel.channels['BACK_LEFT']: 24,
+               wheel.channels['BACK_RIGHT']: 25 }
+               
+    bufferSize = 32
+
+    def __init__(self, state):
         self.state = state
         
-  
-        self.ss_pin_list = ss_pin_list # Slave Select Pin
-        self.spi_delay = spi_delay # SPI delay between transfers (us)
+        # SPI delay between transfers (us)
+        self.spiDelay = 1000
         
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
   
-        for ss_pin in ss_pin_list:
-            GPIO.setup(ss_pin, GPIO.OUT) # set SS pin as an output
-            GPIO.output(ss_pin, 1) # set SS pin to high
+        for ssPin in ssPins.itervalues():
+            GPIO.setup(ssPin, GPIO.OUT) # set SS pin as an output
+            GPIO.output(ssPin, GPIO.HIGH) # set SS pin to high
 
-            self.spi = spidev.SpiDev()
-            self.spi.open(0,0)
+        self.spi = spidev.SpiDev()
+        self.spi.open(0,0)
         
     
-    
-    def sendString(self, string, ss_pin_list_index):
+    def sendString(self, channel, command, string):
         """
         Sends a string across to a SPI slave
-        String length currently limited to length of 12, can modify on slave.
         """
-        ss_pin = self.ss_pin_list[ss_pin_list_index]
-        send_list = list(string)
-        send_list = send_list[:12]
-        send_list.append(chr(3)) # 3 = ETX (End of Text) to signify string finished 
+        # Convert string into a list of characters
+        buffer = list(string)
         
-        GPIO.output(ss_pin, 0) # set SS low
-        self.transferByteAndWait(16) # Send command 16 to signify string being sent
-        for send_byte in send_list:
-            self.transferByteAndWait(ord(send_byte))
-        GPIO.output(ss_pin, 1) # set SS high
+        # Trim the string to fit inside the slave's buffer
+        buffer = buffer[:(bufferSize - 1)]
+        
+        # NUL terminate the string
+        buffer.append('\0')
+        
+        # Prepend the SPI command to the buffer
+        buffer.insert(0, command)
+        
+        # This prepares the slave for a new SPI operation
+        GPIO.output(ssPins[channel], GPIO.LOW)
+        
+        # If an error is detected, give up straight away.
+        # Move onto the next wheel module and come back to this one.
+        for outgoingByte in buffer:
+            incomingByte = self.transferByte(outgoingByte)
+            
+            self.state.spiErrorCounts[channel]['NUM_TRANSFERS'] += 1
+            
+            if incomingByte in slaveErrors:
+                self.state.spiErrorCounts[channel][incomingByte] += 1
+                break
+            
+        
+              
+        GPIO.output(ssPins[channel], GPIO.HIGH) # set SS high
         
     def recieveString(self, command, ss_pin_list_index):
         """
@@ -83,7 +122,8 @@ class SPI:
             recieved_string = "End of Text not recieved"
         return recieved_string
         
-    def transferByteAndWait(self, send_byte):
+        
+    def transferByte(self, outgoingByte):
         """
         Send a single byte across to the slave
         Assumes slave select has already been pulled low
@@ -94,9 +134,7 @@ class SPI:
         transferByteAndWait(DUMMY)
         RECIEVED_BYTE = transferByteAndWait(DUMMY)
         """
-        recieve_byte = self.spi.xfer2([send_byte])
-        time.sleep(self.spi_delay/1000000.0)
-        return recieve_byte
+        return self.spi.xfer2([outgoingByte])
         
     
     def readArduinoState(self, channel):
@@ -123,7 +161,7 @@ class SPI:
         
         print("Establishing SPI connection to Arduino...")
         
-        while self.running and not self.readArduinoState(wheel.Channels.FRONT_LEFT):
+        while self.state.running and not self.readArduinoState(wheel.Channels.FRONT_LEFT):
             pass
             
         print("Success.")
@@ -132,7 +170,7 @@ class SPI:
             self.state.frontLeftWheel.desiredAngle = self.state.frontLeftWheel.measuredAngle
             
         
-        while self.running:
+        while self.state.running:
             # No time.sleep() needed as we have spi_delay
             self.sendString(self.state.frontLeftWheel.getStateAsSPIMessage(), wheel.Channels.FRONT_LEFT)
             self.readArduinoState(wheel.Channels.FRONT_LEFT)
