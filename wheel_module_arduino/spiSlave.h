@@ -165,7 +165,7 @@ class SpiSlave {
         void reset(void);
         void executeIncomingCommand(void);
         void executeReceivedString(void);
-        uint8_t getShutdownError(void);
+        uint8_t *getShutdownError(void);
         
     public:
         SpiSlave(Actuator *actuator, HubMotor *hubMotor);

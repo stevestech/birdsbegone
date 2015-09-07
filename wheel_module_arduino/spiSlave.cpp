@@ -238,12 +238,16 @@ void SpiSlave::executeReceivedString(void) {
 }
 
 
-uint8_t SpiSlave::getShutdownError(void) {
+uint8_t *SpiSlave::getShutdownError(void) {
+    uint8_t error;
+    
     if (actuator->unsafeOrientation) {
-        return UNSAFE_ORIENTATION_SHUTDOWN;
+        error = UNSAFE_ORIENTATION_SHUTDOWN;
     }
     
     else {
-        return ALL_OK;
-    }    
+        error = ALL_OK;
+    }
+    
+    return &error;
 }
