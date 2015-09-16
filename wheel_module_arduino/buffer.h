@@ -52,8 +52,7 @@ class Buffer {
         void loadWithOutgoingData(double *data);
         void loadWithOutgoingData(uint16_t *data);
         void loadWithOutgoingData(uint8_t *data);
-        char getByte(void);
-        char popEchoByte(void);
+        char popByte(void);
         
         void prepareForIncomingData(void);
         void appendByte(char newByte);

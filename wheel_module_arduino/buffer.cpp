@@ -65,7 +65,7 @@ void Buffer::loadWithOutgoingData(uint8_t *data) {
 }
 
 
-char Buffer::getByte(void) {
+char Buffer::popByte(void) {
     // If data has been loaded onto the buffer using load(), then
     // return next byte until the index reaches the end of the buffer
     if ((sending) &&
@@ -76,22 +76,7 @@ char Buffer::getByte(void) {
             sendingComplete = true;
         }
         
-        return buffer[index];
-    }
-    
-    return ASCII_NUL;
-}
-
-
-// Retrieve the expected echo sent from the master, and then increment the index.
-char Buffer::popEchoByte(void) {
-    uint8_t echoIndex = index++ - 2;
-  
-    if ((sending) &&
-        (echoIndex >= 0) &&
-        (echoIndex < bufferLength)) {
-              
-        return buffer[echoIndex - 2];
+        return buffer[index++];
     }
     
     return ASCII_NUL;

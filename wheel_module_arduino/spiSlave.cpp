@@ -110,8 +110,7 @@ void SpiSlave::update(void) {
     
     // SPI interrupt has left data for us to process
     if (incomingByteReady) {
-        // Echo the master's input by default.
-        uint8_t outgoingByte = incomingByte;
+        uint8_t outgoingByte = EMPTY_BYTE;
         
         // The first byte received from the master after SS falling edge will be a command byte.
         if ((!stringBuffer->isSending()) &&
@@ -134,26 +133,10 @@ void SpiSlave::update(void) {
         // If we just executed a command to load the string buffer with data,
         // send the first byte straight away! (Hence the missing "else")
         if (stringBuffer->isSending()) {
-            outgoingByte = stringBuffer->getByte();
+            outgoingByte = stringBuffer->popByte();
             
             if (outgoingByte >= FORBIDDEN_RANGE_START) {
                 errorCondition = MESSAGE_HAS_FORBIDDEN_CHARS;
-            }
-            
-            // Check echo to see if master is receiving our string correctly
-            // First byte is the command byte to load the buffer, no point in verifying that
-            uint8_t echoByte = stringBuffer->popEchoByte();
-            if ((!firstByte) &&
-                (incomingByte != echoByte)) {
-                  
-                errorCondition = MASTER_ECHO_FAILED;
-            }
-            
-            if (!firstByte) {
-                Serial.println("Incoming:");
-                Serial.println(incomingByte);
-                Serial.println("Expected:");
-                Serial.println(echoByte);
             }
         }
         
@@ -204,7 +187,6 @@ void SpiSlave::executeIncomingCommand() {
             break;
             
         default:
-            Serial.println("Not recognising this command");
             errorCondition = COMMAND_NOT_RECOGNISED;
             break;
     }
