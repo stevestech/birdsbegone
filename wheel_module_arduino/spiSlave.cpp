@@ -9,14 +9,12 @@
 
 
 // avr-g++ initialises globals and statics to 0.
-// These globals are accessed by interrupt service routines.
+// Volatile globals are accessed by interrupt service routines.
 volatile uint8_t incomingByte;
-volatile uint8_t outgoingByte;
 
 // The SPI_STC interrupt service routine will not write to incomingByte while this
 // flag is true.
-volatile bool incomingByteLocked;
-
+volatile bool incomingByteReady;
 
 // Used to detect a falling edge on slave select.
 volatile bool slaveSelectPrevValue;
@@ -29,15 +27,11 @@ volatile bool slaveSelectFallingEdge;
 // SPI has finished reading a byte, and is ready to send one back to the master
 ISR (SPI_STC_vect) {
     // Don't write to incomingByte unless the update() method is ready for a new one.
-    if (incomingByteLocked) {
-        SPDR = NOT_READY;
-    }
-    
-    else {
+    if (!incomingByteReady) {
         incomingByte = SPDR;
-        SPDR = outgoingByte;
-        
-        incomingByteLocked = true;
+        incomingByteReady = true;
+        // Once update() has real data to output, SPDR will be updated.
+        SPDR = NOT_READY;
     }
 }
 
@@ -49,7 +43,7 @@ ISR (PCINT0_vect) {
     
     // Detect falling edge
     if (!slaveSelect && slaveSelectPrevValue) {
-        slaveSelectFallingEdge = true;        
+        slaveSelectFallingEdge = true;
     }
     
     slaveSelectPrevValue = slaveSelect;
@@ -102,6 +96,9 @@ void SpiSlave::reset(void) {
     stringBuffer->reset();
     errorCondition = NO_ERROR;
     purposeForIncomingString = NO_INCOMING_STRING;
+    SPDR = EMPTY_BYTE;
+    incomingByteReady = false;
+    firstByte = true;
 }
 
 
@@ -112,58 +109,62 @@ void SpiSlave::update(void) {
     }
     
     // SPI interrupt has left data for us to process
-    if (incomingByteLocked) {
-        if (stringBuffer->isSending()) {
-            #ifdef ENABLE_ECHO_VERIFICATION
-                // Check echo to see if master is receiving our string correctly
-                if (incomingByte != stringBuffer->getPrevByte()) {
-                    errorCondition = MASTER_ECHO_FAILED;
-                }
-            #endif
-            
+    if (incomingByteReady) {
+        // Echo the master's input by default.
+        uint8_t outgoingByte = incomingByte;
+        
+        // The first byte received from the master after SS falling edge will be a command byte.
+        if ((!stringBuffer->isSending()) &&
+            (!stringBuffer->isReceiving())) {
+              
+            executeIncomingCommand();
+        }
+        
+        else if ((stringBuffer->isReceiving()) &&
+                 (!stringBuffer->isReceivingComplete())) {
 
-            outgoingByte = stringBuffer->popNextByte();
+            stringBuffer->appendByte(incomingByte);
+                
+            if (stringBuffer->isReceivingComplete()) {
+                // Woot! We got the string, now do something with it.
+                executeReceivedString();
+            }
+        }
+        
+        // If we just executed a command to load the string buffer with data,
+        // send the first byte straight away! (Hence the missing "else")
+        if (stringBuffer->isSending()) {
+            outgoingByte = stringBuffer->getByte();
             
             if (outgoingByte >= FORBIDDEN_RANGE_START) {
                 errorCondition = MESSAGE_HAS_FORBIDDEN_CHARS;
             }
-        }
-        
-        else if (stringBuffer->isReceiving()) {
-            #ifdef ENABLE_ECHO_VERIFICATION
-                // Echo the input so that the master to verify that we got the correct message.
-                outgoingByte = incomingByte;
-            #else
-                outgoingByte = EMPTY_BYTE;
-            #endif
             
-            if (!stringBuffer->isReceivingComplete()) {
-                stringBuffer->appendByte(incomingByte);
-                
-                if (stringBuffer->isReceivingComplete()) {
-                    // Woot! We got the string, now do something with it.
-                    executeReceivedString();
-                }
+            // Check echo to see if master is receiving our string correctly
+            // First byte is the command byte to load the buffer, no point in verifying that
+            uint8_t echoByte = stringBuffer->popEchoByte();
+            if ((!firstByte) &&
+                (incomingByte != echoByte)) {
+                  
+                errorCondition = MASTER_ECHO_FAILED;
             }
-        }
-        
-        // The first byte received from the master after SS falling edge will be a command byte.
-        else {
-            #ifdef ENABLE_ECHO_VERIFICATION
-                outgoingByte = incomingByte;
-            #else
-                outgoingByte = EMPTY_BYTE;
-            #endif
             
-            executeIncomingCommand();
+            if (!firstByte) {
+                Serial.println("Incoming:");
+                Serial.println(incomingByte);
+                Serial.println("Expected:");
+                Serial.println(echoByte);
+            }
         }
         
         if (errorCondition) {
             outgoingByte = errorCondition;
-        }        
+        }
         
         // Permit the ISR to write to incomingByte again.
-        incomingByteLocked = false;
+        SPDR = outgoingByte;
+        incomingByteReady = false;
+        firstByte = false;
     }
 }
 
@@ -203,6 +204,7 @@ void SpiSlave::executeIncomingCommand() {
             break;
             
         default:
+            Serial.println("Not recognising this command");
             errorCondition = COMMAND_NOT_RECOGNISED;
             break;
     }
@@ -251,3 +253,4 @@ uint8_t *SpiSlave::getShutdownError(void) {
     
     return &error;
 }
+

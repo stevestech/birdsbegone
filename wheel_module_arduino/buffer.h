@@ -4,6 +4,10 @@
 /*
  * LIMITATIONS
  *
+ * The string.h library that comes with Arduino does not support string formatting
+ * with floating point data types, such as double. Therefore only integer data types
+ * are accepted by loadWithOutgoingData().
+ *
  * You can either write to, or read from this buffer, but not both
  * simultaneously. The receiving and sending flags indicate which mode
  * the buffer is currently operating in.
@@ -35,6 +39,7 @@ class Buffer {
         volatile bool sending;
         bool receivingComplete;
         bool sendingComplete;
+        uint8_t bufferLength;
         
     public:
         char *buffer;
@@ -47,8 +52,8 @@ class Buffer {
         void loadWithOutgoingData(double *data);
         void loadWithOutgoingData(uint16_t *data);
         void loadWithOutgoingData(uint8_t *data);
-        char popNextByte(void);
-        char getPrevByte(void);
+        char getByte(void);
+        char popEchoByte(void);
         
         void prepareForIncomingData(void);
         void appendByte(char newByte);

@@ -11,6 +11,7 @@ SpiSlave spiSlave(&actuator, &hubMotor);
 
     
 void setup(void) {
+    Serial.begin(9600);
 }
 
 

@@ -72,7 +72,6 @@
  *                 ...                 |      ...
  *                                     |
  * ASCII CHAR N                        |   NUL CHAR
- * NUL CHAR                            |   NUL CHAR
  *
  * If echo verification fails, the slave will send MASTER_ECHO_FAILED repeatedly
  * to indicate that the operation has failed. Master will then pull up slave select
@@ -83,10 +82,6 @@
 #include "actuator.h"
 #include "hubMotor.h"
 #include "buffer.h"
-
-// When enabled, incoming ascii and command bytes will be echoed back to the master.
-// When sending ascii to the master, the master's echo responses will be checked.
-#define ENABLE_ECHO_VERIFICATION
 
 // The largest expected data string must fit inside this buffer
 #define STRING_BUFFER_SIZE              32
@@ -150,7 +145,7 @@
 class SpiSlave {
     private:
         // Used to send an error message back to the master.
-        bool errorCondition;
+        uint8_t errorCondition;
 
         // Used to hold data when sending or receiving a string.
         Buffer *stringBuffer;
@@ -158,6 +153,9 @@ class SpiSlave {
         // When a string is being read, this indicates what the string should do once received.
         // It is set by the master before sending the string.
         uint8_t purposeForIncomingString;
+        
+        // Set to false after the first transfer
+        bool firstByte;
     
         Actuator *actuator;
         HubMotor *hubMotor;
