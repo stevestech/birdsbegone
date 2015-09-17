@@ -32,11 +32,11 @@ class SPI:
                'MASTER_ECHO_FAILED': chr(255) }
     
     # Slave select pins
-    ssPins = { 'POWER_CONTROL': 27,
-               'FRONT_LEFT': 22,
-               'FRONT_RIGHT': 23,
-               'BACK_LEFT': 24,
-               'BACK_RIGHT': 25 }
+    ssPins = { 'POWER_CONTROL': 5,
+               'FRONT_LEFT': 6,
+               'FRONT_RIGHT': 13,
+               'BACK_LEFT': 19,
+               'BACK_RIGHT': 26 }
                
     bufferSize = 32
     attemptsPerByte = 3

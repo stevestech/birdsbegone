@@ -26,7 +26,7 @@ class State:
             
         # Keep a track of any errors encountered during SPI transfers
         self.spiErrorCounts = {}
-        for channel in Wheel.channels:
+        for channel in SPI.ssPins:
             self.spiErrorCounts[channel] = {}
             self.spiErrorCounts[channel]['NUM_TRANSFERS'] = 0
             
