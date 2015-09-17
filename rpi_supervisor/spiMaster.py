@@ -10,12 +10,26 @@ class SPI:
     These imperatives are sent from the SPI master and
     inform the slave how to behave.
     """
-    commands = { 'RECEIVE_A_ORIENTATION': chr(0),            # Prepare the slave to receive data from the master
+    commands = { # WHEEL HUB COMMANDS
+                 'RECEIVE_A_ORIENTATION': chr(0),            # Prepare the slave to receive data from the master
                  'RECEIVE_HM_STATE': chr(1),
                  'RECEIVE_HM_THROTTLE': chr(2),
                  'LOAD_A_MEASURED_ORIENTATION': chr(100),    # Instruct the slave to load data onto its send buffer for the master to read
                  'LOAD_A_CONTROLLER_OUTPUT': chr(101),
-                 'LOAD_SHUTDOWN_ERROR': chr(102) }
+                 'LOAD_SHUTDOWN_ERROR': chr(102),
+                 
+                 # CENTRAL CONTROL COMMANDS
+                 'RECEIVE_SHUTDOWN_CMD': chr(0),
+                 'RECEIVE_RUNNING_CMD': chr(1),
+                 'RECEIVE_EMERGENCY_STOP_CMD': chr(2),
+                 
+                 'LOAD_SHUTDOWN_STATUS': chr(100),
+                 'LOAD_24V_READING': chr(101),
+                 'LOAD_12V_READING': chr(102),
+                 'LOAD_ENERGY_CONSUMED': chr(103),
+                 'LOAD_CENTRAL_ARDUINO_STATE': chr(104)
+                 
+                 }
     
     """
     SPI ERROR MESSAGES
@@ -32,11 +46,11 @@ class SPI:
                'MASTER_ECHO_FAILED': chr(255) }
     
     # Slave select pins
-    ssPins = { 'POWER_CONTROL': 5,
-               'FRONT_LEFT': 6,
-               'FRONT_RIGHT': 13,
-               'BACK_LEFT': 19,
-               'BACK_RIGHT': 26 }
+    ssPins = { 'FRONT_LEFT': 5,             # 1
+               'FRONT_RIGHT': 6,            # 2
+               'BACK_LEFT': 13,             # 4
+               'BACK_RIGHT': 19,            # 3
+               'POWER_CONTROL': 26 }        # 5
                
     bufferSize = 32
     attemptsPerByte = 3
@@ -66,7 +80,7 @@ class SPI:
         
         
     
-    def sendString(self, channel, command, string):
+    def sendString(self, channel, command, string=''):
         """
         Sends a string across to a SPI slave
         """
@@ -136,7 +150,6 @@ class SPI:
             # All other errors will cause the master to move on immediately.
             while True:
                 for attempt in range(SPI.attemptsPerByte):
-                    # Echo the received bytes to enable verification by the slave
                     incomingByte = self.transferByte('\0')
                     self.state.spiErrorCounts[channel]['NUM_TRANSFERS'] += 1
                     
@@ -226,16 +239,20 @@ class SPI:
         while not self.readArduinoState('FRONT_LEFT'):
             if not self.state.running:
                 return
-            
+        
         print("Success.")
             
         with self.state.lock:
             self.state.wheels['FRONT_LEFT'].setADesiredOrientation(self.state.wheels['FRONT_LEFT'].aMeasuredOrientation)
-            
+        
+        
+        #self.sendString('FRONT_LEFT', 'RECEIVE_RUNNING_CMD') # Send command to central arduino saying that rpi has been turned on
         
         while self.state.running:
+            #self.sendString('FRONT_LEFT', 'RECEIVE_EMERGENCY_STOP_CMD')
+            #randomstuff = raw_input("press enter to send running command")
+            
             self.sendString('FRONT_LEFT', 'RECEIVE_A_ORIENTATION', str(self.state.wheels['FRONT_LEFT'].aDesiredOrientation))
             self.sendString('FRONT_LEFT', 'RECEIVE_HM_STATE', str(self.state.wheels['FRONT_LEFT'].hmMode))
             self.sendString('FRONT_LEFT', 'RECEIVE_HM_THROTTLE', str(self.state.wheels['FRONT_LEFT'].hmThrottle))
-            
             self.readArduinoState('FRONT_LEFT')
