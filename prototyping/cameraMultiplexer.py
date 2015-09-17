@@ -1,5 +1,5 @@
 """
-http://suksant.com/2013/04/26/fast-colour-based-object-tracking-with-opencv/
+Runs the camera multiplexer, currently has some bugs present.
 """
 
 # Import required packages
