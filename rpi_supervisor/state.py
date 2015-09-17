@@ -8,12 +8,10 @@ from spiMaster import SPI
 
 class State:
     robot_state = {'RUNNING': 1,
-              'EMERGENCY_STOP': 3}
+                   'EMERGENCY_STOP': 3}
     
     def __init__(self):
         self.lock = threading.RLock()
-        
-        
         
         # Set to false when this application is shutting down
         self.running = True

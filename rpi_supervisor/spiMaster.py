@@ -47,11 +47,11 @@ class SPI:
                'MASTER_ECHO_FAILED': chr(255) }
     
     # Slave select pins
-    ssPins = { 'FRONT_LEFT': 5,             # 1
-               'FRONT_RIGHT': 6,            # 2
-               'BACK_LEFT': 13,             # 4
-               'BACK_RIGHT': 19,            # 3
-               'POWER_CONTROL': 26 }        # 5
+    ssPins = { 'FRONT_LEFT': 23,             # 1
+               'FRONT_RIGHT': 24,            # 2
+               'BACK_RIGHT': 25,            # 3
+               'BACK_LEFT': 8,             # 4
+               'POWER_CONTROL': 7 }        # 5
                
     bufferSize = 32
     attemptsPerByte = 3
@@ -220,8 +220,8 @@ class SPI:
                 return False
                 
             with self.state.lock:
-                self.state.wheels['FRONT_LEFT'].aMeasuredOrientation = int(angle)
-                self.state.wheels['FRONT_LEFT'].aThrottle = int(actuator)
+                self.state.wheels[channel].aMeasuredOrientation = int(angle)
+                self.state.wheels[channel].aThrottle = int(actuator)
             
         except ValueError:
             # SPI did not return the expected value / is not online
@@ -238,7 +238,7 @@ class SPI:
                 return False
                 
             with self.state.lock:
-                self.state.robot_state = (int)state
+                self.state.robot_state = int(state)
         
         except ValueError:
             return False
@@ -254,9 +254,11 @@ class SPI:
             
             if not battery24v or not battery12v or not energy_consumed:
                 return False
-                
+            
+            """    
             with self.state.lock:
-                self.state.robot_state = (int)state
+                self.state.robot_state = int(state)
+            """
         
         except ValueError:
             return False
@@ -268,28 +270,58 @@ class SPI:
         # Wait until SPI is online and then set the current wheel position
         # as the wheel angle setpoint.
         
-        print("Establishing SPI connection to Arduino...")
+        print("Connecting to front left Arduino...")
         
         while not self.readArduinoState('FRONT_LEFT'):
             if not self.state.running:
                 return
         
-        print("Success.")
-            
+        print("Connecting to front right Arduino...")
+        
+        while not self.readArduinoState('FRONT_RIGHT'):
+            if not self.state.running:
+                return
+        
+        print("Connecting to back right Arduino...")
+        
+        while not self.readArduinoState('BACK_RIGHT'):
+            if not self.state.running:
+                return
+                
+        print("Connecting to back left Arduino...")
+        
+        while not self.readArduinoState('BACK_LEFT'):
+            if not self.state.running:
+                return
+        
+        """        
+        print("Connecting to central control Arduino...")
+        
+        while not self.readArduinoState('POWER_CONTROL'):
+            if not self.state.running:
+                return
+        """
+                
+        print("SPI devices are online.")
+                
+        # Initial steering actuator setpoint should be equal to the wheel's present position
         with self.state.lock:
             self.state.wheels['FRONT_LEFT'].setADesiredOrientation(self.state.wheels['FRONT_LEFT'].aMeasuredOrientation)
+            self.state.wheels['FRONT_RIGHT'].setADesiredOrientation(self.state.wheels['FRONT_RIGHT'].aMeasuredOrientation)
+            self.state.wheels['BACK_RIGHT'].setADesiredOrientation(self.state.wheels['BACK_RIGHT'].aMeasuredOrientation)
+            self.state.wheels['BACK_LEFT'].setADesiredOrientation(self.state.wheels['BACK_LEFT'].aMeasuredOrientation)
         
-        
-        #self.sendString('FRONT_LEFT', 'RECEIVE_RUNNING_CMD') # Send command to central arduino saying that rpi has been turned on
+        self.sendString('POWER_CONTROL', 'RECEIVE_RUNNING_CMD') # Send command to central arduino saying that rpi has been turned on
         
         while self.state.running:
             #self.sendString('FRONT_LEFT', 'RECEIVE_EMERGENCY_STOP_CMD')
             #randomstuff = raw_input("press enter to send running command")
             
-            #self.sendString('FRONT_LEFT', 'RECEIVE_A_ORIENTATION', str(self.state.wheels['FRONT_LEFT'].aDesiredOrientation))
-            #self.sendString('FRONT_LEFT', 'RECEIVE_HM_STATE', str(self.state.wheels['FRONT_LEFT'].hmMode))
-            #self.sendString('FRONT_LEFT', 'RECEIVE_HM_THROTTLE', str(self.state.wheels['FRONT_LEFT'].hmThrottle))
-            #self.readArduinoState('FRONT_LEFT')
+            for channel in Wheel.channels:            
+                self.sendString(channel, 'RECEIVE_A_ORIENTATION', str(self.state.wheels[channel].aDesiredOrientation))
+                self.sendString(channel, 'RECEIVE_HM_STATE', str(self.state.wheels[channel].hmMode))
+                self.sendString(channel, 'RECEIVE_HM_THROTTLE', str(self.state.wheels[channel].hmThrottle))
+                self.readArduinoState(channel)
             
             
             # SPI PLAN
