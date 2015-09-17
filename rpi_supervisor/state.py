@@ -7,17 +7,24 @@ from cameraCapture import Camera
 from spiMaster import SPI
 
 class State:
+    robot_state = {'RUNNING': 1,
+              'EMERGENCY_STOP': 3}
+    
     def __init__(self):
         self.lock = threading.RLock()
+        
+        
         
         # Set to false when this application is shutting down
         self.running = True
         
-        # If computer vision navigation is enabled
-        self.autoPilot = False
-        
         # When true, disable all motors
         self.emergencyStop = False
+        
+        # Battery vars
+        self.battery24v = 0;
+        self.battery12v = 0;
+        self.energy_consumed = 0;
         
         # Kinematic state for each wheel module
         self.wheels = {}

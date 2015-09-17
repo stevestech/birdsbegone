@@ -22,6 +22,7 @@ class SPI:
                  'RECEIVE_SHUTDOWN_CMD': chr(0),
                  'RECEIVE_RUNNING_CMD': chr(1),
                  'RECEIVE_EMERGENCY_STOP_CMD': chr(2),
+                 'RECEIVE_POWER_DOWN_CMD': chr(3),
                  
                  'LOAD_SHUTDOWN_STATUS': chr(100),
                  'LOAD_24V_READING': chr(101),
@@ -228,7 +229,40 @@ class SPI:
             
         else:
             return True
+    
+    def readCentralArduinoState(self, channel):
+        try:
+            state = self.recieveString(channel, 'LOAD_CENTRAL_ARDUINO_STATE')
+            
+            if not state:
+                return False
                 
+            with self.state.lock:
+                self.state.robot_state = (int)state
+        
+        except ValueError:
+            return False
+            
+        else:
+            return True
+            
+    def readCentralArduinoBattery(self, channel):
+        try:
+            battery24v = self.recieveString(channel, 'LOAD_24V_READING')
+            battery12v = self.recieveString(channel, 'LOAD_12V_READING')
+            energy_consumed = self.recieveString(channel, 'LOAD_ENERGY_CONSUMED')
+            
+            if not battery24v or not battery12v or not energy_consumed:
+                return False
+                
+            with self.state.lock:
+                self.state.robot_state = (int)state
+        
+        except ValueError:
+            return False
+            
+        else:
+            return True
         
     def run(self):
         # Wait until SPI is online and then set the current wheel position
@@ -252,7 +286,29 @@ class SPI:
             #self.sendString('FRONT_LEFT', 'RECEIVE_EMERGENCY_STOP_CMD')
             #randomstuff = raw_input("press enter to send running command")
             
-            self.sendString('FRONT_LEFT', 'RECEIVE_A_ORIENTATION', str(self.state.wheels['FRONT_LEFT'].aDesiredOrientation))
-            self.sendString('FRONT_LEFT', 'RECEIVE_HM_STATE', str(self.state.wheels['FRONT_LEFT'].hmMode))
-            self.sendString('FRONT_LEFT', 'RECEIVE_HM_THROTTLE', str(self.state.wheels['FRONT_LEFT'].hmThrottle))
-            self.readArduinoState('FRONT_LEFT')
+            #self.sendString('FRONT_LEFT', 'RECEIVE_A_ORIENTATION', str(self.state.wheels['FRONT_LEFT'].aDesiredOrientation))
+            #self.sendString('FRONT_LEFT', 'RECEIVE_HM_STATE', str(self.state.wheels['FRONT_LEFT'].hmMode))
+            #self.sendString('FRONT_LEFT', 'RECEIVE_HM_THROTTLE', str(self.state.wheels['FRONT_LEFT'].hmThrottle))
+            #self.readArduinoState('FRONT_LEFT')
+            
+            
+            # SPI PLAN
+            
+            # STARTUP
+            #   - Wait until recieve response from central arduino (check if state is 'starting up')
+            #   - Wait until recieve response from Arduino's 1,2,3 & 4 (Read pot measurement)
+            #   - Set central arduino to running state
+            
+            # Update Arduino 1, 2, 3 & 4
+            #   - Send across desired wheel orientation
+            #   - Send acroos desired hub motor state
+            #   - Send across desured hub motor throttle
+            #   - Read the actuator angle
+            #   - Read the controller output
+            
+            # Update Central Arduino
+            #   - Read the state of the Arduino
+            #   - Compare RPi state to read arduino state, decide which is high priority
+            #   - Update Arduino state if nessecary,
+            #   - Battery 1 & 2 Read
+            #   - Current Transducer Read
