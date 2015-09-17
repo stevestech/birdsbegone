@@ -32,17 +32,17 @@ class SPI:
                'MASTER_ECHO_FAILED': chr(255) }
     
     # Slave select pins
-    ssPins = { 'POWER_CONTROL': 5,
-               'FRONT_LEFT': 6,
-               'FRONT_RIGHT': 13,
-               'BACK_LEFT': 19,
-               'BACK_RIGHT': 26 }
+    ssPins = { 'POWER_CONTROL': 24,
+               'FRONT_LEFT': 23,
+               'FRONT_RIGHT': 25,
+               'BACK_RIGHT': 7,
+               'BACK_LEFT': 8 }
                
     bufferSize = 32
     attemptsPerByte = 3
     
     # SPI delay between transfers (s)
-    delay = 0.001
+    delay = 0.010
 
     def __init__(self, state):
         self.state = state
