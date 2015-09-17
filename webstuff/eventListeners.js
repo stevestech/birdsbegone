@@ -19,9 +19,9 @@ $(function() {
 		// Left mouse button
 		if(event.which === 1) {
 			sendCommand({
-				cmd: "setState",
+				cmd: "setHmMode",
 				wheel: "all",
-				state: "neutral"
+				mode: "neutral"
 			});
 
 			// This also triggers the slidechange event, sending the
@@ -60,9 +60,9 @@ $(function() {
 	// Change state using the state radio buttons
 	$("#states input").change(function() {
 		sendCommand({
-			cmd: "setState",
+			cmd: "setHmMode",
 			wheel: "all",
-			state: this.value
+			mode: this.value
 		});
 	});
 
@@ -73,13 +73,13 @@ $(function() {
 		$("#throttle .value").text(ui.value);
 		
 		// Should we broadcast this value change to the supervisor?
-		if ($("#throttle .slider").hasClass("updated")) {
-			$("#throttle .slider").removeClass("updated");
+		if ($("#throttle .slider").hasClass("no-broadcast")) {
+			$("#throttle .slider").removeClass("no-broadcast");
 		}
 		
-		else {		
+		else {
 			sendCommand({
-				cmd: "setThrottle",
+				cmd: "setHmThrottle",
 				wheel: "all",
 				throttle: ui.value
 			});
@@ -129,7 +129,7 @@ $(function() {
 		
 		else {
 			sendCommand({
-				cmd: "setAngle",
+				cmd: "setActAngle",
 				wheel: "fl",
 				angle: ui.value
 			});
