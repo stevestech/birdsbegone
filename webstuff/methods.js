@@ -82,67 +82,75 @@ function updateControls(data) {
 			break;
 	}
 
-	// Sliders should not broadcast this value change back to the
-	// supervisor, or a looping mess of sockets would result
-	$("#throttle .slider").addClass("no-broadcast");
-	$("#fl-angle .slider").addClass("no-broadcast");
+	if (updatingTestingControls) {
+		// Sliders should not broadcast this value change back to the
+		// supervisor, or a looping mess of sockets would result
+		$("#throttle .slider").addClass("no-broadcast");
+		$("#fl-angle .slider").addClass("no-broadcast");
 
-	$("#throttle .slider").slider("value", data["WHEELS"]["BACK_LEFT"]["HM_THROTTLE"]);
-	$("#fl-angle .slider").slider("value", data["WHEELS"]["BACK_LEFT"]["A_ANGLE_D"]);
+		$("#throttle .slider").slider("value", data["WHEELS"]["BACK_LEFT"]["HM_THROTTLE"]);
+		$("#fl-angle .slider").slider("value", data["WHEELS"]["BACK_LEFT"]["A_ANGLE_D"]);
+		
+		$("#fl-angle-pot .value").text(data["WHEELS"]["BACK_LEFT"]["A_ANGLE_M"]);
+		$("#fl-angle-pot .bar").progressbar("value", data["WHEELS"]["BACK_LEFT"]["A_ANGLE_M"]);
+		
+		$("#fl-actuator .value").text(data["WHEELS"]["BACK_LEFT"]["A_THROTTLE"]);
+		$("#fl-actuator .bar").progressbar("value", data["WHEELS"]["BACK_LEFT"]["A_THROTTLE"] + 127);
+	}
 	
-	$("#fl-angle-pot .value").text(data["WHEELS"]["BACK_LEFT"]["A_ANGLE_M"]);
-	$("#fl-angle-pot .bar").progressbar("value", data["WHEELS"]["BACK_LEFT"]["A_ANGLE_M"]);
+	if (updatingSpiStats) {
+		$(".fl .slave_echo_failed").text(data["ERRORS"]["FRONT_LEFT"]["SLAVE_ECHO_FAILED"]);
+		$(".fl .missing_nul_terminator").text(data["ERRORS"]["FRONT_LEFT"]["MISSING_NUL_TERMINATOR"]);
+		$(".fl .message_has_forbidden_chars").text(data["ERRORS"]["FRONT_LEFT"]["MESSAGE_HAS_FORBIDDEN_CHARS"]);
+		$(".fl .command_not_recognised").text(data["ERRORS"]["FRONT_LEFT"]["COMMAND_NOT_RECOGNISED"]);
+		$(".fl .not_ready").text(data["ERRORS"]["FRONT_LEFT"]["NOT_READY"]);
+		$(".fl .master_echo_failed").text(data["ERRORS"]["FRONT_LEFT"]["MASTER_ECHO_FAILED"]);
+		$(".fl .total").text(data["ERRORS"]["FRONT_LEFT"]["NUM_TRANSFERS"]);
+		
+		$(".fr .slave_echo_failed").text(data["ERRORS"]["FRONT_RIGHT"]["SLAVE_ECHO_FAILED"]);
+		$(".fr .missing_nul_terminator").text(data["ERRORS"]["FRONT_RIGHT"]["MISSING_NUL_TERMINATOR"]);
+		$(".fr .message_has_forbidden_chars").text(data["ERRORS"]["FRONT_RIGHT"]["MESSAGE_HAS_FORBIDDEN_CHARS"]);
+		$(".fr .command_not_recognised").text(data["ERRORS"]["FRONT_RIGHT"]["COMMAND_NOT_RECOGNISED"]);
+		$(".fr .not_ready").text(data["ERRORS"]["FRONT_RIGHT"]["NOT_READY"]);
+		$(".fr .master_echo_failed").text(data["ERRORS"]["FRONT_RIGHT"]["MASTER_ECHO_FAILED"]);
+		$(".fr .total").text(data["ERRORS"]["FRONT_RIGHT"]["NUM_TRANSFERS"]);
+		
+		$(".bl .slave_echo_failed").text(data["ERRORS"]["BACK_LEFT"]["SLAVE_ECHO_FAILED"]);
+		$(".bl .missing_nul_terminator").text(data["ERRORS"]["BACK_LEFT"]["MISSING_NUL_TERMINATOR"]);
+		$(".bl .message_has_forbidden_chars").text(data["ERRORS"]["BACK_LEFT"]["MESSAGE_HAS_FORBIDDEN_CHARS"]);
+		$(".bl .command_not_recognised").text(data["ERRORS"]["BACK_LEFT"]["COMMAND_NOT_RECOGNISED"]);
+		$(".bl .not_ready").text(data["ERRORS"]["BACK_LEFT"]["NOT_READY"]);
+		$(".bl .master_echo_failed").text(data["ERRORS"]["BACK_LEFT"]["MASTER_ECHO_FAILED"]);
+		$(".bl .total").text(data["ERRORS"]["BACK_LEFT"]["NUM_TRANSFERS"]);
+		
+		$(".br .slave_echo_failed").text(data["ERRORS"]["BACK_RIGHT"]["SLAVE_ECHO_FAILED"]);
+		$(".br .missing_nul_terminator").text(data["ERRORS"]["BACK_RIGHT"]["MISSING_NUL_TERMINATOR"]);
+		$(".br .message_has_forbidden_chars").text(data["ERRORS"]["BACK_RIGHT"]["MESSAGE_HAS_FORBIDDEN_CHARS"]);
+		$(".br .command_not_recognised").text(data["ERRORS"]["BACK_RIGHT"]["COMMAND_NOT_RECOGNISED"]);
+		$(".br .not_ready").text(data["ERRORS"]["BACK_RIGHT"]["NOT_READY"]);
+		$(".br .master_echo_failed").text(data["ERRORS"]["BACK_RIGHT"]["MASTER_ECHO_FAILED"]);
+		$(".br .total").text(data["ERRORS"]["BACK_RIGHT"]["NUM_TRANSFERS"]);
+		
+		$(".control .slave_echo_failed").text(data["ERRORS"]["POWER_CONTROL"]["SLAVE_ECHO_FAILED"]);
+		$(".control .missing_nul_terminator").text(data["ERRORS"]["POWER_CONTROL"]["MISSING_NUL_TERMINATOR"]);
+		$(".control .message_has_forbidden_chars").text(data["ERRORS"]["POWER_CONTROL"]["MESSAGE_HAS_FORBIDDEN_CHARS"]);
+		$(".control .command_not_recognised").text(data["ERRORS"]["POWER_CONTROL"]["COMMAND_NOT_RECOGNISED"]);
+		$(".control .not_ready").text(data["ERRORS"]["POWER_CONTROL"]["NOT_READY"]);
+		$(".control .master_echo_failed").text(data["ERRORS"]["POWER_CONTROL"]["MASTER_ECHO_FAILED"]);
+		$(".control .total").text(data["ERRORS"]["POWER_CONTROL"]["NUM_TRANSFERS"]);
+	}
 	
-	$("#fl-actuator .value").text(data["WHEELS"]["BACK_LEFT"]["A_THROTTLE"]);
-	$("#fl-actuator .bar").progressbar("value", data["WHEELS"]["BACK_LEFT"]["A_THROTTLE"] + 127);
-	
+	if (updatingSteeringControls) {
+		$("#steering .measured-angle-slider").slider(value, data["WHEELS"]["FRONT_LEFT"]["A_ANGLE_M"]);
+	}
+		
 	if (data["ERRORS"]["MSG"] != "") {
 		setStatus(true, data["ERRORS"]["MSG"]);
 	}
 	
 	else {
 		setStatus(false, "");
-	}
-	
-	$(".fl .slave_echo_failed").text(data["ERRORS"]["FRONT_LEFT"]["SLAVE_ECHO_FAILED"]);
-	$(".fl .missing_nul_terminator").text(data["ERRORS"]["FRONT_LEFT"]["MISSING_NUL_TERMINATOR"]);
-	$(".fl .message_has_forbidden_chars").text(data["ERRORS"]["FRONT_LEFT"]["MESSAGE_HAS_FORBIDDEN_CHARS"]);
-	$(".fl .command_not_recognised").text(data["ERRORS"]["FRONT_LEFT"]["COMMAND_NOT_RECOGNISED"]);
-	$(".fl .not_ready").text(data["ERRORS"]["FRONT_LEFT"]["NOT_READY"]);
-	$(".fl .master_echo_failed").text(data["ERRORS"]["FRONT_LEFT"]["MASTER_ECHO_FAILED"]);
-	$(".fl .total").text(data["ERRORS"]["FRONT_LEFT"]["NUM_TRANSFERS"]);
-	
-	$(".fr .slave_echo_failed").text(data["ERRORS"]["FRONT_RIGHT"]["SLAVE_ECHO_FAILED"]);
-	$(".fr .missing_nul_terminator").text(data["ERRORS"]["FRONT_RIGHT"]["MISSING_NUL_TERMINATOR"]);
-	$(".fr .message_has_forbidden_chars").text(data["ERRORS"]["FRONT_RIGHT"]["MESSAGE_HAS_FORBIDDEN_CHARS"]);
-	$(".fr .command_not_recognised").text(data["ERRORS"]["FRONT_RIGHT"]["COMMAND_NOT_RECOGNISED"]);
-	$(".fr .not_ready").text(data["ERRORS"]["FRONT_RIGHT"]["NOT_READY"]);
-	$(".fr .master_echo_failed").text(data["ERRORS"]["FRONT_RIGHT"]["MASTER_ECHO_FAILED"]);
-	$(".fr .total").text(data["ERRORS"]["FRONT_RIGHT"]["NUM_TRANSFERS"]);
-	
-	$(".bl .slave_echo_failed").text(data["ERRORS"]["BACK_LEFT"]["SLAVE_ECHO_FAILED"]);
-	$(".bl .missing_nul_terminator").text(data["ERRORS"]["BACK_LEFT"]["MISSING_NUL_TERMINATOR"]);
-	$(".bl .message_has_forbidden_chars").text(data["ERRORS"]["BACK_LEFT"]["MESSAGE_HAS_FORBIDDEN_CHARS"]);
-	$(".bl .command_not_recognised").text(data["ERRORS"]["BACK_LEFT"]["COMMAND_NOT_RECOGNISED"]);
-	$(".bl .not_ready").text(data["ERRORS"]["BACK_LEFT"]["NOT_READY"]);
-	$(".bl .master_echo_failed").text(data["ERRORS"]["BACK_LEFT"]["MASTER_ECHO_FAILED"]);
-	$(".bl .total").text(data["ERRORS"]["BACK_LEFT"]["NUM_TRANSFERS"]);
-	
-	$(".br .slave_echo_failed").text(data["ERRORS"]["BACK_RIGHT"]["SLAVE_ECHO_FAILED"]);
-	$(".br .missing_nul_terminator").text(data["ERRORS"]["BACK_RIGHT"]["MISSING_NUL_TERMINATOR"]);
-	$(".br .message_has_forbidden_chars").text(data["ERRORS"]["BACK_RIGHT"]["MESSAGE_HAS_FORBIDDEN_CHARS"]);
-	$(".br .command_not_recognised").text(data["ERRORS"]["BACK_RIGHT"]["COMMAND_NOT_RECOGNISED"]);
-	$(".br .not_ready").text(data["ERRORS"]["BACK_RIGHT"]["NOT_READY"]);
-	$(".br .master_echo_failed").text(data["ERRORS"]["BACK_RIGHT"]["MASTER_ECHO_FAILED"]);
-	$(".br .total").text(data["ERRORS"]["BACK_RIGHT"]["NUM_TRANSFERS"]);
-	
-	$(".control .slave_echo_failed").text(data["ERRORS"]["POWER_CONTROL"]["SLAVE_ECHO_FAILED"]);
-	$(".control .missing_nul_terminator").text(data["ERRORS"]["POWER_CONTROL"]["MISSING_NUL_TERMINATOR"]);
-	$(".control .message_has_forbidden_chars").text(data["ERRORS"]["POWER_CONTROL"]["MESSAGE_HAS_FORBIDDEN_CHARS"]);
-	$(".control .command_not_recognised").text(data["ERRORS"]["POWER_CONTROL"]["COMMAND_NOT_RECOGNISED"]);
-	$(".control .not_ready").text(data["ERRORS"]["POWER_CONTROL"]["NOT_READY"]);
-	$(".control .master_echo_failed").text(data["ERRORS"]["POWER_CONTROL"]["MASTER_ECHO_FAILED"]);
-	$(".control .total").text(data["ERRORS"]["POWER_CONTROL"]["NUM_TRANSFERS"]);
+	}	
 }
 
 
@@ -182,7 +190,7 @@ function sendCommand(commands) {
 			updateState(10000);
 		}
 	});
-}	
+}
 
 
 // Set width of sliders based on width of existing elements

@@ -25,8 +25,46 @@ function updateState(ms) {
 	
 	updateStateTimer = setTimeout(function() {
 		sendCommand({
-			cmd: "update"
+			cmd: "setActAngle",
+			wheel: "all",
+			angle: $("#steering .setpoint-slider").slider("value")
 		});
+		
+		if (goForwardIsPressed) {
+			sendCommand({
+				cmd: "setHmMode",
+				wheel: "all",
+				mode: "forward"
+			});
+			
+			sendCommand({
+				cmd: "setHmThrottle",
+				wheel: "all",
+				throttle: 30
+			});
+		}
+		
+		else if (goBackwardIsPressed) {
+			sendCommand({
+				cmd: "setHmMode",
+				wheel: "all",
+				mode: "reverse"
+			});
+			
+			sendCommand({
+				cmd: "setHmThrottle",
+				wheel: "all",
+				throttle: 30
+			});
+		}
+		
+		else {
+			sendCommand({
+				cmd: "setHmMode",
+				wheel: "all",
+				mode: "neutral"
+			});
+		}
 	}, ms);
 }
 

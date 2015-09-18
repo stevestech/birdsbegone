@@ -1,3 +1,13 @@
+var steerLeftIsPressed = false;
+var steerRightIsPressed = false;
+var goForwardIsPressed = false;
+var goBackwardIsPressed = false;
+
+var updatingSpiStats = false;
+var updatingTestingControls = false;
+var updatingSteeringControls = false;
+
+
 $(window).on("load", function() {
 	updateControlsWidth();
 	updateState(1);
@@ -13,7 +23,6 @@ $(window).on("resize", function() {
 
 // Register event listeners
 $(function() {
-	
 	// Emergency stop button
 	$("#stop").mousedown(function(event) {
 		// Left mouse button
@@ -36,8 +45,20 @@ $(function() {
 	$("#tabs").on("tabsactivate", function(event, ui) {
 		// Perform initialisation tasks for the newly selected tab
 		switch(ui.newTab.text()) {
+			case "Testing":
+				updatingTestingControls = true;
+			break;
+			
 			case "Cameras":
 				startUpdatingCameras();
+			break;
+			
+			case "Status":
+				updatingSpiStats = true;
+			break;
+			
+			case "Steering":
+				updatingSteeringControls = true;
 			break;
 			
 			default:
@@ -46,8 +67,25 @@ $(function() {
 		
 		// Perform cleanup for the previous tab
 		switch(ui.oldTab.text()) {
+			case "Testing":
+				updatingTestingControls = false;
+			break;
+			
 			case "Cameras":
 				stopUpdatingCameras();
+			break;
+			
+			case "Status":
+				updatingSpiStats = false;
+			break;
+			
+			case "Steering":
+				updatingSteeringControls = false;
+				
+				steerLeftIsPressed = false;
+				steerRightIsPressed = false;
+				goForwardIsPressed = false;
+				goBackwardIsPressed = false;
 			break;
 			
 			default:
@@ -55,7 +93,11 @@ $(function() {
 		}
 	});
 
-
+	
+	
+	////////////////////////////////////////////////////////////////////
+	//			TESTING: THROTTLE AND ACTUATOR CONTROLS				  //
+	////////////////////////////////////////////////////////////////////
 	
 	// Change state using the state radio buttons
 	$("#states input").change(function() {
@@ -164,5 +206,19 @@ $(function() {
 			
 			$("#fl-angle .slider").slider("value", newValue);
 		}
-	});	
+	});
+	
+	
+	////////////////////////////////////////////////////////////////////
+	//                      STEERING CONTROLS                         //
+	////////////////////////////////////////////////////////////////////
+	
+	$("#steering .left").mousedown(function (event) {
+		// Left mouse button
+		if(event.which === 1) {
+			var newValue = $("#steering .setpoint-slider").slider("value");
+			newValue += 1;
+			
+			$("#fl-angle .slider").slider("value", newValue);
+		}
 });
