@@ -47,11 +47,11 @@ class SPI:
                'MASTER_ECHO_FAILED': chr(255) }
     
     # Slave select pins
-    ssPins = { 'FRONT_LEFT': 23,             # 1
-               'FRONT_RIGHT': 24,            # 2
-               'BACK_RIGHT': 25,            # 3
-               'BACK_LEFT': 8,             # 4
-               'POWER_CONTROL': 7 }        # 5
+    ssPins = { 'FRONT_LEFT': 5,             # 1
+               'FRONT_RIGHT': 6,            # 2
+               'BACK_RIGHT': 13,            # 3
+               'BACK_LEFT': 19,             # 4
+               'POWER_CONTROL': 26 }        # 5
                
     bufferSize = 32
     attemptsPerByte = 3
@@ -270,6 +270,7 @@ class SPI:
         # Wait until SPI is online and then set the current wheel position
         # as the wheel angle setpoint.
         
+        """
         print("Connecting to front left Arduino...")
         
         while not self.readArduinoState('FRONT_LEFT'):
@@ -287,14 +288,14 @@ class SPI:
         while not self.readArduinoState('BACK_RIGHT'):
             if not self.state.running:
                 return
-                
+        """
         print("Connecting to back left Arduino...")
         
         while not self.readArduinoState('BACK_LEFT'):
             if not self.state.running:
                 return
+        """
         
-        """        
         print("Connecting to central control Arduino...")
         
         while not self.readArduinoState('POWER_CONTROL'):
@@ -314,9 +315,6 @@ class SPI:
         self.sendString('POWER_CONTROL', 'RECEIVE_RUNNING_CMD') # Send command to central arduino saying that rpi has been turned on
         
         while self.state.running:
-            #self.sendString('FRONT_LEFT', 'RECEIVE_EMERGENCY_STOP_CMD')
-            #randomstuff = raw_input("press enter to send running command")
-            
             for channel in Wheel.channels:            
                 self.sendString(channel, 'RECEIVE_A_ORIENTATION', str(self.state.wheels[channel].aDesiredOrientation))
                 self.sendString(channel, 'RECEIVE_HM_STATE', str(self.state.wheels[channel].hmMode))
