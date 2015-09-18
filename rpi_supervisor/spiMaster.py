@@ -47,19 +47,17 @@ class SPI:
                'MASTER_ECHO_FAILED': chr(255) }
     
     # Slave select pins
-<<<<<<< HEAD
     ssPins = { 'POWER_CONTROL': 24,
                'FRONT_LEFT': 23,
                'FRONT_RIGHT': 25,
                'BACK_RIGHT': 7,
                'BACK_LEFT': 8 }
-=======
+               
     ssPins = { 'FRONT_LEFT': 5,             # 1
                'FRONT_RIGHT': 6,            # 2
                'BACK_RIGHT': 13,            # 3
                'BACK_LEFT': 19,             # 4
                'POWER_CONTROL': 26 }        # 5
->>>>>>> spipolling
                
     bufferSize = 32
     attemptsPerByte = 3
