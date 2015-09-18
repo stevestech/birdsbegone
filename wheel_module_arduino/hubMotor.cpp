@@ -33,7 +33,7 @@ HubMotor::HubMotor(bool *emergencyStop) {
 }
 
 
-void HubMotor::update(void) {
+void HubMotor::update(void) { 
     if (*emergencyStop) {
         state = STATE_NEUTRAL;
         throttle = 0;

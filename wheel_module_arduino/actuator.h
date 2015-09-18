@@ -42,16 +42,16 @@
 #define ACTUATOR_PWM_MAX                    127
 
 // Won't accept setpoints from the master outside of these limits
-#define WHEEL_ORIENTATION_LIMIT_MIN         400
-#define WHEEL_ORIENTATION_LIMIT_MAX         600
+#define WHEEL_ORIENTATION_LIMIT_MIN         350
+#define WHEEL_ORIENTATION_LIMIT_MAX         650
 
 // Will shutdown actuator motor if wheel orientation found outside these limits
-#define WHEEL_ORIENTATION_SHUTDOWN_MIN      300
-#define WHEEL_ORIENTATION_SHUTDOWN_MAX      700
+#define WHEEL_ORIENTATION_SHUTDOWN_MIN      250
+#define WHEEL_ORIENTATION_SHUTDOWN_MAX      750
 
 // Actuator PID gains
 #define GAIN_PROPORTIONAL                   1
-#define GAIN_INTEGRAL                       0
+#define GAIN_INTEGRAL                       0.2
 #define GAIN_DIFFERENTIAL                   0
 
 class Actuator {

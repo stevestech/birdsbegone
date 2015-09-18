@@ -2,6 +2,7 @@
 import spidev
 import time
 import RPi.GPIO as GPIO
+import subprocess
 from wheel import Wheel
 
 class SPI:
@@ -47,18 +48,12 @@ class SPI:
                'MASTER_ECHO_FAILED': chr(255) }
     
     # Slave select pins
-    ssPins = { 'POWER_CONTROL': 24,
-               'FRONT_LEFT': 23,
-               'FRONT_RIGHT': 25,
-               'BACK_RIGHT': 7,
-               'BACK_LEFT': 8 }
-               
     ssPins = { 'FRONT_LEFT': 5,             # 1
                'FRONT_RIGHT': 6,            # 2
                'BACK_RIGHT': 13,            # 3
                'BACK_LEFT': 19,             # 4
                'POWER_CONTROL': 26 }        # 5
-               
+			   
     bufferSize = 32
     attemptsPerByte = 3
     
@@ -244,7 +239,7 @@ class SPI:
                 return False
                 
             with self.state.lock:
-                self.state.robot_state = int(state)
+                self.state.central_arduino_state = int(state)
         
         except ValueError:
             return False
@@ -304,13 +299,13 @@ class SPI:
         
         print("Connecting to central control Arduino...")
         
-        while not self.readArduinoState('POWER_CONTROL'):
+        while not self.readCentralArduinoState('POWER_CONTROL'):
             if not self.state.running:
                 return
         """
                 
         print("SPI devices are online.")
-                
+
         # Initial steering actuator setpoint should be equal to the wheel's present position
         with self.state.lock:
             self.state.wheels['FRONT_LEFT'].setADesiredOrientation(self.state.wheels['FRONT_LEFT'].aMeasuredOrientation)
@@ -318,8 +313,19 @@ class SPI:
             self.state.wheels['BACK_RIGHT'].setADesiredOrientation(self.state.wheels['BACK_RIGHT'].aMeasuredOrientation)
             self.state.wheels['BACK_LEFT'].setADesiredOrientation(self.state.wheels['BACK_LEFT'].aMeasuredOrientation)
         
-        self.sendString('POWER_CONTROL', 'RECEIVE_RUNNING_CMD') # Send command to central arduino saying that rpi has been turned on
-        
+		print("Setting robot state to running...")
+		
+		# Send command to central arduino saying that rpi has been turned on
+		# Wait until confirmed that Arduino is in running state, otherwise continually send set running command
+		while(self.state.central_arduino_state != self.state.robot_states['RUNNING']):
+			self.sendString('POWER_CONTROL', 'RECEIVE_RUNNING_CMD')
+			readCentralArduinoState('POWER_CONTROL')
+		
+		with self.state.lock:
+			self.state.robot_state = self.state.robot_states['RUNNING'] # Set central state to running
+		
+		print("Robot in running state!")
+		
         while self.state.running:
             for channel in Wheel.channels:            
                 self.sendString(channel, 'RECEIVE_A_ORIENTATION', str(self.state.wheels[channel].aDesiredOrientation))
@@ -327,7 +333,29 @@ class SPI:
                 self.sendString(channel, 'RECEIVE_HM_THROTTLE', str(self.state.wheels[channel].hmThrottle))
                 self.readArduinoState(channel)
             
-            
+			# Update central arduino state
+            readCentralArduinoState('POWER_CONTROL')
+			# If either central Arduino or robot is in emergency stop state, set both to emergency stop 
+			if ((self.state.robot_states['EMERGENCY_STOP'] == (self.state.central_arduino_state or self.state.robot_state)):
+				self.sendString('POWER_CONTROL', 'RECEIVE_EMERGENCY_STOP_CMD')
+				with self.state.lock:
+					self.state.central_arduino_state = self.state.robot_states['EMERGENCY_STOP']
+					self.state.robot_state = self.state.robot_states['EMERGENCY_STOP']
+					
+			# If either central Arduino or robot is in shutdown state, set both to shutdown
+			if ((self.state.robot_states['SHUTTING_DOWN'] == (self.state.central_arduino_state or self.state.robot_state)):
+				self.sendString('POWER_CONTROL', 'RECEIVE_SHUTDOWN_CMD')
+				with self.state.lock:
+					self.state.central_arduino_state = self.state.robot_states['SHUTTING_DOWN']
+					self.state.robot_state = self.state.robot_states['SHUTTING_DOWN']
+				subprocess.call(["shutdown", "-h", "now"]) # call the shutdown command
+				
+			# If power down mode is set on the pi, then swap the central arduino to power down mode and everything will shutdown instantly
+			if (self.state.robot_states['POWER_DOWN'] == self.state.robot_state)
+				self.sendString('POWER_CONTROL', 'RECEIVE_POWER_DOWN_CMD')
+				
+			# readCentralArduinoBattery('POWER_CONTROL') # FUNCTION UNDER CONSTRUCTION
+			
             # SPI PLAN
             
             # STARTUP
@@ -335,7 +363,7 @@ class SPI:
             #   - Wait until recieve response from Arduino's 1,2,3 & 4 (Read pot measurement)
             #   - Set central arduino to running state
             
-            # Update Arduino 1, 2, 3 & 4
+            # Update Arduino 1, 2, 3 & 4 (Francis Stuff!)
             #   - Send across desired wheel orientation
             #   - Send acroos desired hub motor state
             #   - Send across desured hub motor throttle

@@ -7,8 +7,14 @@ from cameraCapture import Camera
 from spiMaster import SPI
 
 class State:
-    robot_state = {'RUNNING': 1,
-                   'EMERGENCY_STOP': 3}
+    robot_states = {
+					'STARTING_UP' : 	0,
+					'RUNNING': 			1,
+					'SHUTTING_DOWN': 	2,
+                    'EMERGENCY_STOP': 	3,
+					'POWER_DOWN': 4,
+					'NULL': 100
+					}
     
     def __init__(self):
         self.lock = threading.RLock()
@@ -24,6 +30,10 @@ class State:
         self.battery12v = 0;
         self.energy_consumed = 0;
         
+		# Central Arduino State
+		self.central_arduino_state = self.robot_states['STARTING_UP']
+		self.robot_state = self.robot_states['STARTING_UP']
+		
         # Kinematic state for each wheel module
         self.wheels = {}
         for channel in Wheel.channels:

@@ -4,17 +4,17 @@
 #include "actuator.h"
 #include "hubMotor.h"
 #include "spiSlave.h"
+#include "timers.h"
 
 bool emergencyStop = false;
 
+Timers timers(&emergencyStop);
 Actuator actuator(&emergencyStop);
 HubMotor hubMotor(&emergencyStop);
-SpiSlave spiSlave(&emergencyStop, &actuator, &hubMotor);
+SpiSlave spiSlave(&emergencyStop, &actuator, &hubMotor, &timers);
 
     
 void setup(void) {
-    // Enable if needed for debug
-    // Serial.begin(9600);
 }
 
 
@@ -22,4 +22,5 @@ void loop(void) {
     spiSlave.update();
     actuator.update();
     hubMotor.update();
+    timers.update();
 }

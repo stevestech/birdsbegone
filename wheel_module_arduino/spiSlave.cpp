@@ -51,17 +51,18 @@ ISR (PCINT0_vect) {
 
 
 // Constructor
-SpiSlave::SpiSlave(bool *emergencyStop, Actuator *actuator, HubMotor *hubMotor) {
+SpiSlave::SpiSlave(bool *emergencyStop, Actuator *actuator, HubMotor *hubMotor, Timers *timers) {
     stringBuffer = new Buffer(STRING_BUFFER_SIZE);
     
     this->actuator = actuator;
     this->hubMotor = hubMotor;
+    this->timers = timers;
     this->emergencyStop = emergencyStop;
     
     /*
      * Setup GPIO
      **/
-    pinMode(SS, INPUT);                           // D10
+    pinMode(SS, INPUT_PULLUP);                    // D10
     pinMode(MOSI, INPUT);                         // D11
     pinMode(MISO, OUTPUT);                        // D12
     pinMode(SCK, INPUT);                          // D13
@@ -105,6 +106,7 @@ void SpiSlave::reset(void) {
 
 void SpiSlave::update(void) {
     if (slaveSelectFallingEdge) {
+        timers->spi_polled = true;
         slaveSelectFallingEdge = false;
         reset();
     }

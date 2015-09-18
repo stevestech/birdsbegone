@@ -52,8 +52,8 @@ Actuator::Actuator(bool *emergencyStop) {
     analogWrite(PIN_A_THROTTLE_CW, 0);
     analogWrite(PIN_A_THROTTLE_ACW, 0);
     
-    digitalWrite(PIN_A_ENABLE_CW, LOW);
-    digitalWrite(PIN_A_ENABLE_ACW, LOW);
+    digitalWrite(PIN_A_ENABLE_CW, HIGH);
+    digitalWrite(PIN_A_ENABLE_ACW, HIGH);
 }
 
 
@@ -79,8 +79,8 @@ void Actuator::update() {
         analogWrite(PIN_A_THROTTLE_ACW, 0);
         
         // Only a restart will be able to re-enable these
-        digitalWrite(PIN_A_ENABLE_CW, HIGH);
-        digitalWrite(PIN_A_ENABLE_ACW, HIGH);
+        digitalWrite(PIN_A_ENABLE_CW, LOW);
+        digitalWrite(PIN_A_ENABLE_ACW, LOW);
     }
     
     else {
