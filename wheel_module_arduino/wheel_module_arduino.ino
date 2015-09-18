@@ -5,13 +5,16 @@
 #include "hubMotor.h"
 #include "spiSlave.h"
 
-Actuator actuator;
-HubMotor hubMotor;
-SpiSlave spiSlave(&actuator, &hubMotor);
+bool emergencyStop = false;
+
+Actuator actuator(&emergencyStop);
+HubMotor hubMotor(&emergencyStop);
+SpiSlave spiSlave(&emergencyStop, &actuator, &hubMotor);
 
     
 void setup(void) {
-    Serial.begin(9600);
+    // Enable if needed for debug
+    // Serial.begin(9600);
 }
 
 

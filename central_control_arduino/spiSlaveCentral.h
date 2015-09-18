@@ -79,9 +79,12 @@
  **/
  
 #include <stdint.h>
-#include "actuator.h"
-#include "hubMotor.h"
 #include "buffer.h"
+#include "buttons.h"
+#include "relays.h"
+#include "battery.h"
+#include "timers.h"
+#include "central_states.h"
 
 // The largest expected data string must fit inside this buffer
 #define STRING_BUFFER_SIZE              32
@@ -118,23 +121,31 @@
 
 
 /*
+ * SHUTDOWN ERROR CODES
+ *
+ * Used by the master to query if anything has gone wrong in hardware.
+ **/
+ 
+#define ALL_OK                              0
+#define UNSAFE_ORIENTATION_SHUTDOWN         1
+
+
+/*
  * SPI COMMANDS
  *
  * These imperatives are sent from the SPI master and
  * inform the slave how to behave.
  **/ 
-#define RECEIVE_A_ORIENTATION           0
-#define RECEIVE_HM_STATE                1
-#define RECEIVE_HM_THROTTLE             2
- 
-#define LOAD_A_MEASURED_ORIENTATION     100
-#define LOAD_A_CONTROLLER_OUTPUT        101
-#define LOAD_EMERGENCY_STOP             102
-#define LOAD_ACTUATOR_STATUS_L          103
-#define LOAD_ACTUATOR_STATUS_R          104
-#define LOAD_HUB_MOTOR_SPEED            105
+#define RECEIVE_SHUTDOWN_CMD			0
+#define RECEIVE_RUNNING_CMD			1
+#define RECEIVE_EMERGENCY_STOP_CMD              2
 
-#define SET_EMERGENCY_STOP              255
+#define LOAD_SHUTDOWN_STATUS		    100
+#define LOAD_24V_READING		        101
+#define LOAD_12V_READING                102
+#define LOAD_ENERGY_CONSUMED			103
+#define LOAD_CENTRAL_ARDUINO_STATE          104
+
 
 class SpiSlave {
     private:
@@ -150,19 +161,19 @@ class SpiSlave {
         
         // Set to false after the first transfer
         bool firstByte;
-    
-        Actuator *actuator;
-        HubMotor *hubMotor;
-        bool *emergencyStop;
+        
+        Battery *battery;
+        Timers *timers;
         
         void reset(void);
-        void executeIncomingCommand(void);
-        void executeReceivedString(void);
+        void executeIncomingCommand(uint8_t *current_state);
+        void executeReceivedString(uint8_t *current_state);
         
     public:
-        SpiSlave(bool *emergencyStop, Actuator *actuator, HubMotor *hubMotor);
+        SpiSlave(Battery *battery, Timers *timers);
+        void init(void);
         ~SpiSlave();
-        void update(void);
+        void update(uint8_t *current_state);
 };
     
 

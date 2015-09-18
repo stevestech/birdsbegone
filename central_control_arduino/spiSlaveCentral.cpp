@@ -4,9 +4,8 @@
 #include <string.h>
 
 // See header file for a description of the protocol used.
-#include "spiSlave.h"
+#include "spiSlaveCentral.h"
 #include "stringToUint.h"
-
 
 // avr-g++ initialises globals and statics to 0.
 // Volatile globals are accessed by interrupt service routines.
@@ -40,7 +39,6 @@ ISR (SPI_STC_vect) {
 // to receive an incoming command from the master.
 ISR (PCINT0_vect) {
     bool slaveSelect = digitalRead(SS);
-    
     // Detect falling edge
     if (!slaveSelect && slaveSelectPrevValue) {
         slaveSelectFallingEdge = true;
@@ -51,13 +49,15 @@ ISR (PCINT0_vect) {
 
 
 // Constructor
-SpiSlave::SpiSlave(bool *emergencyStop, Actuator *actuator, HubMotor *hubMotor) {
+SpiSlave::SpiSlave(Battery *battery, Timers *timers) {
     stringBuffer = new Buffer(STRING_BUFFER_SIZE);
     
-    this->actuator = actuator;
-    this->hubMotor = hubMotor;
-    this->emergencyStop = emergencyStop;
-    
+    this->battery = battery;
+    this->timers = timers;
+}
+
+void SpiSlave::init()
+{
     /*
      * Setup GPIO
      **/
@@ -80,11 +80,9 @@ SpiSlave::SpiSlave(bool *emergencyStop, Actuator *actuator, HubMotor *hubMotor) 
     // Enable SPI in slave mode
     bitSet(SPCR, SPE);
     
-    
     // Initialise flags and variables
     reset();
 }
-
 
 SpiSlave::~SpiSlave(void) {
     delete stringBuffer;
@@ -103,8 +101,9 @@ void SpiSlave::reset(void) {
 }
 
 
-void SpiSlave::update(void) {
+void SpiSlave::update(uint8_t *current_state) {
     if (slaveSelectFallingEdge) {
+        timers->spi_polled = true;
         slaveSelectFallingEdge = false;
         reset();
     }
@@ -114,10 +113,8 @@ void SpiSlave::update(void) {
         uint8_t outgoingByte = EMPTY_BYTE;
         
         // The first byte received from the master after SS falling edge will be a command byte.
-        if ((!stringBuffer->isSending()) &&
-            (!stringBuffer->isReceiving())) {
-              
-            executeIncomingCommand();
+        if (firstByte) {
+            executeIncomingCommand(current_state);
         }
         
         else if ((stringBuffer->isReceiving()) &&
@@ -127,7 +124,7 @@ void SpiSlave::update(void) {
                 
             if (stringBuffer->isReceivingComplete()) {
                 // Woot! We got the string, now do something with it.
-                executeReceivedString();
+                executeReceivedString(current_state);
             }
         }
         
@@ -153,60 +150,39 @@ void SpiSlave::update(void) {
 }
 
 
-void SpiSlave::executeIncomingCommand() {
-    uint16_t data;
-  
+void SpiSlave::executeIncomingCommand(uint8_t *current_state) {
     switch(incomingByte) {
-        case RECEIVE_A_ORIENTATION:
-            // Update the steering PID controller with a new setpoint from the SPI master
-            stringBuffer->prepareForIncomingData();
-            purposeForIncomingString = RECEIVE_A_ORIENTATION;
+		// Instead of three three different receive cmds, could just have a single receive commands
+		// which receives a single char to set the state?? Allows to simplify code, but dunno if its
+		// worth the implementation time?
+	    case RECEIVE_SHUTDOWN_CMD:
+            *current_state = STATE_SHUTTING_DOWN;
+            break;
+			
+	    case RECEIVE_RUNNING_CMD:
+            *current_state = STATE_RUNNING;
+            break;
+			
+	   case RECEIVE_EMERGENCY_STOP_CMD:
+            *current_state = STATE_EMERGENCY_STOP;
+            break;
+			
+        case LOAD_CENTRAL_ARDUINO_STATE:
+            stringBuffer->loadWithOutgoingData(current_state);
             break;
             
-        case RECEIVE_HM_STATE:
-            // Update the hub motor state (neutral, braking, forward, reverse)
-            stringBuffer->prepareForIncomingData();
-            purposeForIncomingString = RECEIVE_HM_STATE;
+        case LOAD_24V_READING:
+            stringBuffer->loadWithOutgoingData(battery->getBattery24VReading());
             break;
             
-        case RECEIVE_HM_THROTTLE:
-            // Update the hub motor throttle (0 - 255)
-            stringBuffer->prepareForIncomingData();
-            purposeForIncomingString = RECEIVE_HM_THROTTLE;
+        case LOAD_12V_READING:
+            stringBuffer->loadWithOutgoingData(battery->getBattery12VReading());
             break;
-            
-        case LOAD_A_MEASURED_ORIENTATION:
-            // Load the measured steering orientation from the pot onto the string buffer
-            stringBuffer->loadWithOutgoingData(actuator->getMeasuredOrientation());
+		
+        case LOAD_ENERGY_CONSUMED:
+            stringBuffer->loadWithOutgoingData(battery->getEnergyConsumed());
             break;
-            
-        case LOAD_A_CONTROLLER_OUTPUT:
-            // Load the steering PID control output onto the string buffer
-            stringBuffer->loadWithOutgoingData(actuator->getControllerOutput());
-            break;
-            
-        case LOAD_EMERGENCY_STOP:
-            stringBuffer->loadWithOutgoingData(emergencyStop);
-            break;
-            
-        case LOAD_ACTUATOR_STATUS_L:
-            data = actuator->readStatusL();
-            stringBuffer->loadWithOutgoingData(&data);
-            break;
-            
-        case LOAD_ACTUATOR_STATUS_R:
-            data = actuator->readStatusR();        
-            stringBuffer->loadWithOutgoingData(&data);
-            break;
-            
-        case LOAD_HUB_MOTOR_SPEED:
-            data = hubMotor->getWheelSpeed();
-            stringBuffer->loadWithOutgoingData(&data);
-        
-        case SET_EMERGENCY_STOP:
-            *emergencyStop = true;
-            break;
-            
+			
         default:
             errorCondition = COMMAND_NOT_RECOGNISED;
             break;
@@ -214,31 +190,9 @@ void SpiSlave::executeIncomingCommand() {
 }
 
 
-void SpiSlave::executeReceivedString(void) {
+void SpiSlave::executeReceivedString(uint8_t *current_state) {
     switch(purposeForIncomingString) {
-        case RECEIVE_A_ORIENTATION:
-            // Update the steering PID controller with a new setpoint from the SPI master
-            uint16_t newSetpoint;
-            if (stringToUint(stringBuffer->buffer, &newSetpoint)) {
-                actuator->setDesiredOrientation(&newSetpoint);
-            }
-            break;
-            
-        case RECEIVE_HM_STATE:
-            // Update the hub motor state (neutral, braking, forward, reverse)
-            uint8_t newState;
-            if (stringToUint(stringBuffer->buffer, &newState)) {
-                hubMotor->setState(&newState);
-            }
-            break;
-            
-        case RECEIVE_HM_THROTTLE:
-            // Update the hub motor throttle (0 - 255)
-            uint8_t newThrottle;
-            if (stringToUint(stringBuffer->buffer, &newThrottle)) {
-                hubMotor->setThrottle(&newThrottle);
-            }
-            break;
+		// INPUT SWITCH CASES FOR RECIEVING STRING
     }    
 }
 

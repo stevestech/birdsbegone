@@ -72,7 +72,7 @@ class SPI:
         
         # Dict of errors, containing only error codes detected by the slave. This subset of the "errors"
         # dict is extracted using a Python "list comprehension"
-        self.slaveErrors = dict((key, value) for key, value in SPI.errors.iteritems() if SPI.slaveErrorMin >= 252)
+        self.slaveErrors = dict((key, value) for key, value in SPI.errors.iteritems() if ord(value) >= SPI.slaveErrorMin)
         
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
