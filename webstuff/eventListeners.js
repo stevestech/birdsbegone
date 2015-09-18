@@ -123,14 +123,14 @@ $(function() {
 		$("#fl-angle .value").text(ui.value + "°");
 		
 		// Should we broadcast this value change to the supervisor?
-		if ($("#fl-angle .slider").hasClass("updated")) {
-			$("#fl-angle .slider").removeClass("updated");
+		if ($("#fl-angle .slider").hasClass("no-broadcast")) {
+			$("#fl-angle .slider").removeClass("no-broadcast");
 		}
 		
 		else {
 			sendCommand({
 				cmd: "setActAngle",
-				wheel: "fl",
+				wheel: "all",
 				angle: ui.value
 			});
 		}

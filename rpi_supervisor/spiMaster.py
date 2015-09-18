@@ -15,9 +15,15 @@ class SPI:
                  'RECEIVE_A_ORIENTATION': chr(0),            # Prepare the slave to receive data from the master
                  'RECEIVE_HM_STATE': chr(1),
                  'RECEIVE_HM_THROTTLE': chr(2),
+                 
                  'LOAD_A_MEASURED_ORIENTATION': chr(100),    # Instruct the slave to load data onto its send buffer for the master to read
                  'LOAD_A_CONTROLLER_OUTPUT': chr(101),
-                 'LOAD_SHUTDOWN_ERROR': chr(102),
+                 'LOAD_EMERGENCY_STOP': chr(102),
+                 'LOAD_A_STATUS_L': chr(103),
+                 'LOAD_A_STATUS_R': chr(104),
+                 'LOAD_HM_SPEED': chr(105),
+                 
+                 'SET_EMERGENCY_STOP': chr(255),
                  
                  # CENTRAL CONTROL COMMANDS
                  'RECEIVE_SHUTDOWN_CMD': chr(0),
@@ -53,7 +59,7 @@ class SPI:
                'BACK_RIGHT': 13,            # 3
                'BACK_LEFT': 19,             # 4
                'POWER_CONTROL': 26 }        # 5
-			   
+               
     bufferSize = 32
     attemptsPerByte = 3
     
@@ -211,7 +217,7 @@ class SPI:
         return chr(incomingByte.pop())
         
     
-    def readArduinoState(self, channel):
+    def readWheelModuleState(self, channel):
         try:
             angle = self.receiveString(channel, 'LOAD_A_MEASURED_ORIENTATION')
             actuator = self.receiveString(channel, 'LOAD_A_CONTROLLER_OUTPUT')
@@ -233,7 +239,7 @@ class SPI:
     
     def readCentralArduinoState(self, channel):
         try:
-            state = self.recieveString(channel, 'LOAD_CENTRAL_ARDUINO_STATE')
+            state = self.receiveString(channel, 'LOAD_CENTRAL_ARDUINO_STATE')
             
             if not state:
                 return False
@@ -274,37 +280,41 @@ class SPI:
         """
         print("Connecting to front left Arduino...")
         
-        while not self.readArduinoState('FRONT_LEFT'):
+        while not self.readWheelModuleState('FRONT_LEFT'):
             if not self.state.running:
                 return
         
         print("Connecting to front right Arduino...")
         
-        while not self.readArduinoState('FRONT_RIGHT'):
+        while not self.readWheelModuleState('FRONT_RIGHT'):
             if not self.state.running:
                 return
         
         print("Connecting to back right Arduino...")
         
-        while not self.readArduinoState('BACK_RIGHT'):
+        while not self.readWheelModuleState('BACK_RIGHT'):
             if not self.state.running:
                 return
         """
         print("Connecting to back left Arduino...")
+        with self.state.lock:
+            self.state.errorMessage = "Connecting to back left Arduino..."
         
-        while not self.readArduinoState('BACK_LEFT'):
+        while not self.readWheelModuleState('BACK_LEFT'):
             if not self.state.running:
                 return
-        """
         
         print("Connecting to central control Arduino...")
-        
+        with self.state.lock:
+            self.state.errorMessage = "Connecting to central control Arduino..."
+            
         while not self.readCentralArduinoState('POWER_CONTROL'):
             if not self.state.running:
                 return
-        """
                 
         print("SPI devices are online.")
+        with self.state.lock:
+            self.state.errorMessage = ""
 
         # Initial steering actuator setpoint should be equal to the wheel's present position
         with self.state.lock:
@@ -313,49 +323,53 @@ class SPI:
             self.state.wheels['BACK_RIGHT'].setADesiredOrientation(self.state.wheels['BACK_RIGHT'].aMeasuredOrientation)
             self.state.wheels['BACK_LEFT'].setADesiredOrientation(self.state.wheels['BACK_LEFT'].aMeasuredOrientation)
         
-		print("Setting robot state to running...")
-		
-		# Send command to central arduino saying that rpi has been turned on
-		# Wait until confirmed that Arduino is in running state, otherwise continually send set running command
-		while(self.state.central_arduino_state != self.state.robot_states['RUNNING']):
-			self.sendString('POWER_CONTROL', 'RECEIVE_RUNNING_CMD')
-			readCentralArduinoState('POWER_CONTROL')
-		
-		with self.state.lock:
-			self.state.robot_state = self.state.robot_states['RUNNING'] # Set central state to running
-		
-		print("Robot in running state!")
-		
+        print("Setting robot state to running...")
+        
+        # Send command to central arduino saying that rpi has been turned on
+        # Wait until confirmed that Arduino is in running state, otherwise continually send set running command
+        while(self.state.central_arduino_state != self.state.robot_states['RUNNING']):
+            self.sendString('POWER_CONTROL', 'RECEIVE_RUNNING_CMD')
+            self.readCentralArduinoState('POWER_CONTROL')
+        
+        with self.state.lock:
+            self.state.robot_state = self.state.robot_states['RUNNING'] # Set central state to running
+        
+        print("Robot in running state!")
+        
         while self.state.running:
             for channel in Wheel.channels:            
                 self.sendString(channel, 'RECEIVE_A_ORIENTATION', str(self.state.wheels[channel].aDesiredOrientation))
                 self.sendString(channel, 'RECEIVE_HM_STATE', str(self.state.wheels[channel].hmMode))
                 self.sendString(channel, 'RECEIVE_HM_THROTTLE', str(self.state.wheels[channel].hmThrottle))
-                self.readArduinoState(channel)
+                self.readWheelModuleState(channel)
+                
+                with self.state.lock:
+                    if (self.receiveString(channel, 'LOAD_EMERGENCY_STOP') == 1):
+                        self.state.errorMessage = channel + " has emergency stopped."
             
-			# Update central arduino state
-            readCentralArduinoState('POWER_CONTROL')
-			# If either central Arduino or robot is in emergency stop state, set both to emergency stop 
-			if ((self.state.robot_states['EMERGENCY_STOP'] == (self.state.central_arduino_state or self.state.robot_state)):
-				self.sendString('POWER_CONTROL', 'RECEIVE_EMERGENCY_STOP_CMD')
-				with self.state.lock:
-					self.state.central_arduino_state = self.state.robot_states['EMERGENCY_STOP']
-					self.state.robot_state = self.state.robot_states['EMERGENCY_STOP']
-					
-			# If either central Arduino or robot is in shutdown state, set both to shutdown
-			if ((self.state.robot_states['SHUTTING_DOWN'] == (self.state.central_arduino_state or self.state.robot_state)):
-				self.sendString('POWER_CONTROL', 'RECEIVE_SHUTDOWN_CMD')
-				with self.state.lock:
-					self.state.central_arduino_state = self.state.robot_states['SHUTTING_DOWN']
-					self.state.robot_state = self.state.robot_states['SHUTTING_DOWN']
-				subprocess.call(["shutdown", "-h", "now"]) # call the shutdown command
-				
-			# If power down mode is set on the pi, then swap the central arduino to power down mode and everything will shutdown instantly
-			if (self.state.robot_states['POWER_DOWN'] == self.state.robot_state)
-				self.sendString('POWER_CONTROL', 'RECEIVE_POWER_DOWN_CMD')
-				
-			# readCentralArduinoBattery('POWER_CONTROL') # FUNCTION UNDER CONSTRUCTION
-			
+            # Update central arduino state
+            self.readCentralArduinoState('POWER_CONTROL')
+            # If either central Arduino or robot is in emergency stop state, set both to emergency stop 
+            if (self.state.robot_states['EMERGENCY_STOP'] in [self.state.central_arduino_state, self.state.robot_state]):
+                self.sendString('POWER_CONTROL', 'RECEIVE_EMERGENCY_STOP_CMD')
+                with self.state.lock:
+                    self.state.central_arduino_state = self.state.robot_states['EMERGENCY_STOP']
+                    self.state.robot_state = self.state.robot_states['EMERGENCY_STOP']
+                    
+            # If either central Arduino or robot is in shutdown state, set both to shutdown
+            if (self.state.robot_states['SHUTTING_DOWN'] in [self.state.central_arduino_state, self.state.robot_state]):
+                self.sendString('POWER_CONTROL', 'RECEIVE_SHUTDOWN_CMD')
+                with self.state.lock:
+                    self.state.central_arduino_state = self.state.robot_states['SHUTTING_DOWN']
+                    self.state.robot_state = self.state.robot_states['SHUTTING_DOWN']
+                #subprocess.call(["shutdown", "-h", "now"]) # call the shutdown command
+                
+            # If power down mode is set on the pi, then swap the central arduino to power down mode and everything will shutdown instantly
+            if (self.state.robot_states['POWER_DOWN'] == self.state.robot_state):
+                self.sendString('POWER_CONTROL', 'RECEIVE_POWER_DOWN_CMD')
+                
+            # readCentralArduinoBattery('POWER_CONTROL') # FUNCTION UNDER CONSTRUCTION
+            
             # SPI PLAN
             
             # STARTUP

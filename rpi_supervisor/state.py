@@ -8,13 +8,13 @@ from spiMaster import SPI
 
 class State:
     robot_states = {
-					'STARTING_UP' : 	0,
-					'RUNNING': 			1,
-					'SHUTTING_DOWN': 	2,
-                    'EMERGENCY_STOP': 	3,
-					'POWER_DOWN': 4,
-					'NULL': 100
-					}
+                    'STARTING_UP' : 0,
+                    'RUNNING': 1,
+                    'SHUTTING_DOWN': 2,
+                    'EMERGENCY_STOP': 3,
+                    'POWER_DOWN': 4,
+                    'NULL': 100
+                    }
     
     def __init__(self):
         self.lock = threading.RLock()
@@ -25,15 +25,17 @@ class State:
         # When true, disable all motors
         self.emergencyStop = False
         
+        self.errorMessage = ""
+        
         # Battery vars
         self.battery24v = 0;
         self.battery12v = 0;
         self.energy_consumed = 0;
         
-		# Central Arduino State
-		self.central_arduino_state = self.robot_states['STARTING_UP']
-		self.robot_state = self.robot_states['STARTING_UP']
-		
+        # Central Arduino State
+        self.central_arduino_state = self.robot_states['STARTING_UP']
+        self.robot_state = self.robot_states['STARTING_UP']
+        
         # Kinematic state for each wheel module
         self.wheels = {}
         for channel in Wheel.channels:
@@ -58,6 +60,7 @@ class State:
         state = {}
             
         state['ERRORS'] = self.spiErrorCounts
+        state['ERRORS']['MSG'] = self.errorMessage
         
         state['WHEELS'] = {}
         for wheel in self.wheels:
