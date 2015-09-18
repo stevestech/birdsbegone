@@ -88,6 +88,58 @@ body {
 }
 
 
+#fl-forward {
+	margin-top: 25px;
+}
+
+#fl-forward .label {
+	display: inline-block;
+	position: relative;
+	top: 2px;
+	width: 100px;
+}
+
+#fl-forward .value {
+	display: inline-block;
+	margin-left: -290px;
+	position: relative;
+	top: 2px;
+	width: 13px;
+}
+
+#fl-forward .button {
+	display: inline-block;
+	margin-left: 170px;
+	width: 75px;
+	height: 75px;
+}
+
+#fl-reverse {
+	margin-top: 25px;
+}
+
+#fl-reverse .label {
+	display: inline-block;
+	position: relative;
+	top: 2px;
+	width: 100px;
+	
+}
+
+#fl-reverse .value {
+	display: inline-block;
+	margin-left: -290px;
+	position: relative;
+	top: 2px;
+	width: 13px;
+}
+
+#fl-reverse .button {
+	display: inline-block;
+	margin-left: 170px;
+	width: 75px;
+	height: 75px;
+}
 
 
 #fl-angle {
@@ -103,26 +155,30 @@ body {
 
 #fl-angle .value {
 	display: inline-block;
-	margin-left: 5px;
+	margin-left: -40px;
 	position: relative;
 	top: 2px;
 	width: 13px;
 }
 
-#fl-angle .buttonset {
+#fl-angle .decrease {
 	display: inline-block;
-	margin-left: 30px;
+	margin-left: 80px;
+	width: 75px;
+	height: 75px;
 }
 
 #fl-angle .slider {
 	display: inline-block;
-	margin-left: 20px;
+	margin-left: 10px;
 	top: 2px;
 }
 
 #fl-angle .increase {
 	display: inline-block;
-	margin-left: 20px;
+	margin-left: 120px;
+	width: 75px;
+	height: 75px;
 }
 
 
@@ -156,18 +212,18 @@ body {
 
 
 
-#fl-actuator {
+#fl-robotangle {
 	margin-top: 25px;
 }
 
-#fl-actuator .label {
+#fl-robotangle .label {
 	display: inline-block;
 	position: relative;
 	bottom: 10px;
 	width: 100px;
 }
 
-#fl-actuator .value {
+#fl-robotangle .value {
 	display: inline-block;
 	margin-left: 5px;
 	position: relative;
@@ -175,7 +231,7 @@ body {
 	width: 13px;
 }
 
-#fl-actuator .bar {
+#fl-robotangle .bar {
 	display: inline-block;
 	margin-left: 30px;
 	/* Width is calculated in JavaScript */
