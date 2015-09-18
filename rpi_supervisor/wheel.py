@@ -1,8 +1,8 @@
 class Wheel:
     channels = { 'FRONT_LEFT': 0,
                  'FRONT_RIGHT': 1,
-                 'BACK_LEFT': 2,
-                 'BACK_RIGHT': 3 }
+                 'BACK_RIGHT': 2,
+                 'BACK_LEFT': 3 }
                  
     modes = { 'NEUTRAL': 0,
               'BRAKING': 1,
@@ -43,7 +43,7 @@ class Wheel:
         # Lookup dictionary key given its value (don't judge me!)
         for key, value in Wheel.modes.iteritems():
             if self.hmMode == value:
-                return key
+                return key.lower()
                 
         raise ValueError("Couldn't find hub motor mode key with value: " + str(self.hmMode))
             

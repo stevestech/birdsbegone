@@ -10,12 +10,27 @@ class SPI:
     These imperatives are sent from the SPI master and
     inform the slave how to behave.
     """
-    commands = { 'RECEIVE_A_ORIENTATION': chr(0),            # Prepare the slave to receive data from the master
+    commands = { # WHEEL HUB COMMANDS
+                 'RECEIVE_A_ORIENTATION': chr(0),            # Prepare the slave to receive data from the master
                  'RECEIVE_HM_STATE': chr(1),
                  'RECEIVE_HM_THROTTLE': chr(2),
                  'LOAD_A_MEASURED_ORIENTATION': chr(100),    # Instruct the slave to load data onto its send buffer for the master to read
                  'LOAD_A_CONTROLLER_OUTPUT': chr(101),
-                 'LOAD_SHUTDOWN_ERROR': chr(102) }
+                 'LOAD_SHUTDOWN_ERROR': chr(102),
+                 
+                 # CENTRAL CONTROL COMMANDS
+                 'RECEIVE_SHUTDOWN_CMD': chr(0),
+                 'RECEIVE_RUNNING_CMD': chr(1),
+                 'RECEIVE_EMERGENCY_STOP_CMD': chr(2),
+                 'RECEIVE_POWER_DOWN_CMD': chr(3),
+                 
+                 'LOAD_SHUTDOWN_STATUS': chr(100),
+                 'LOAD_24V_READING': chr(101),
+                 'LOAD_12V_READING': chr(102),
+                 'LOAD_ENERGY_CONSUMED': chr(103),
+                 'LOAD_CENTRAL_ARDUINO_STATE': chr(104)
+                 
+                 }
     
     """
     SPI ERROR MESSAGES
@@ -32,11 +47,19 @@ class SPI:
                'MASTER_ECHO_FAILED': chr(255) }
     
     # Slave select pins
+<<<<<<< HEAD
     ssPins = { 'POWER_CONTROL': 24,
                'FRONT_LEFT': 23,
                'FRONT_RIGHT': 25,
                'BACK_RIGHT': 7,
                'BACK_LEFT': 8 }
+=======
+    ssPins = { 'FRONT_LEFT': 5,             # 1
+               'FRONT_RIGHT': 6,            # 2
+               'BACK_RIGHT': 13,            # 3
+               'BACK_LEFT': 19,             # 4
+               'POWER_CONTROL': 26 }        # 5
+>>>>>>> spipolling
                
     bufferSize = 32
     attemptsPerByte = 3
@@ -66,7 +89,7 @@ class SPI:
         
         
     
-    def sendString(self, channel, command, string):
+    def sendString(self, channel, command, string=''):
         """
         Sends a string across to a SPI slave
         """
@@ -136,7 +159,6 @@ class SPI:
             # All other errors will cause the master to move on immediately.
             while True:
                 for attempt in range(SPI.attemptsPerByte):
-                    # Echo the received bytes to enable verification by the slave
                     incomingByte = self.transferByte('\0')
                     self.state.spiErrorCounts[channel]['NUM_TRANSFERS'] += 1
                     
@@ -206,8 +228,8 @@ class SPI:
                 return False
                 
             with self.state.lock:
-                self.state.wheels['FRONT_LEFT'].aMeasuredOrientation = int(angle)
-                self.state.wheels['FRONT_LEFT'].aThrottle = int(actuator)
+                self.state.wheels[channel].aMeasuredOrientation = int(angle)
+                self.state.wheels[channel].aThrottle = int(actuator)
             
         except ValueError:
             # SPI did not return the expected value / is not online
@@ -215,27 +237,116 @@ class SPI:
             
         else:
             return True
+    
+    def readCentralArduinoState(self, channel):
+        try:
+            state = self.recieveString(channel, 'LOAD_CENTRAL_ARDUINO_STATE')
+            
+            if not state:
+                return False
                 
+            with self.state.lock:
+                self.state.robot_state = int(state)
+        
+        except ValueError:
+            return False
+            
+        else:
+            return True
+            
+    def readCentralArduinoBattery(self, channel):
+        try:
+            battery24v = self.recieveString(channel, 'LOAD_24V_READING')
+            battery12v = self.recieveString(channel, 'LOAD_12V_READING')
+            energy_consumed = self.recieveString(channel, 'LOAD_ENERGY_CONSUMED')
+            
+            if not battery24v or not battery12v or not energy_consumed:
+                return False
+            
+            """    
+            with self.state.lock:
+                self.state.robot_state = int(state)
+            """
+        
+        except ValueError:
+            return False
+            
+        else:
+            return True
         
     def run(self):
         # Wait until SPI is online and then set the current wheel position
         # as the wheel angle setpoint.
         
-        print("Establishing SPI connection to Arduino...")
+        """
+        print("Connecting to front left Arduino...")
         
         while not self.readArduinoState('FRONT_LEFT'):
             if not self.state.running:
                 return
-            
-        print("Success.")
-            
+        
+        print("Connecting to front right Arduino...")
+        
+        while not self.readArduinoState('FRONT_RIGHT'):
+            if not self.state.running:
+                return
+        
+        print("Connecting to back right Arduino...")
+        
+        while not self.readArduinoState('BACK_RIGHT'):
+            if not self.state.running:
+                return
+        """
+        print("Connecting to back left Arduino...")
+        
+        while not self.readArduinoState('BACK_LEFT'):
+            if not self.state.running:
+                return
+        """
+        
+        print("Connecting to central control Arduino...")
+        
+        while not self.readArduinoState('POWER_CONTROL'):
+            if not self.state.running:
+                return
+        """
+                
+        print("SPI devices are online.")
+                
+        # Initial steering actuator setpoint should be equal to the wheel's present position
         with self.state.lock:
             self.state.wheels['FRONT_LEFT'].setADesiredOrientation(self.state.wheels['FRONT_LEFT'].aMeasuredOrientation)
-            
+            self.state.wheels['FRONT_RIGHT'].setADesiredOrientation(self.state.wheels['FRONT_RIGHT'].aMeasuredOrientation)
+            self.state.wheels['BACK_RIGHT'].setADesiredOrientation(self.state.wheels['BACK_RIGHT'].aMeasuredOrientation)
+            self.state.wheels['BACK_LEFT'].setADesiredOrientation(self.state.wheels['BACK_LEFT'].aMeasuredOrientation)
+        
+        self.sendString('POWER_CONTROL', 'RECEIVE_RUNNING_CMD') # Send command to central arduino saying that rpi has been turned on
         
         while self.state.running:
-            self.sendString('FRONT_LEFT', 'RECEIVE_A_ORIENTATION', str(self.state.wheels['FRONT_LEFT'].aDesiredOrientation))
-            self.sendString('FRONT_LEFT', 'RECEIVE_HM_STATE', str(self.state.wheels['FRONT_LEFT'].hmMode))
-            self.sendString('FRONT_LEFT', 'RECEIVE_HM_THROTTLE', str(self.state.wheels['FRONT_LEFT'].hmThrottle))
+            for channel in Wheel.channels:            
+                self.sendString(channel, 'RECEIVE_A_ORIENTATION', str(self.state.wheels[channel].aDesiredOrientation))
+                self.sendString(channel, 'RECEIVE_HM_STATE', str(self.state.wheels[channel].hmMode))
+                self.sendString(channel, 'RECEIVE_HM_THROTTLE', str(self.state.wheels[channel].hmThrottle))
+                self.readArduinoState(channel)
             
-            self.readArduinoState('FRONT_LEFT')
+            
+            # SPI PLAN
+            
+            # STARTUP
+            #   - Wait until recieve response from central arduino (check if state is 'starting up')
+            #   - Wait until recieve response from Arduino's 1,2,3 & 4 (Read pot measurement)
+            #   - Set central arduino to running state
+            
+            # Update Arduino 1, 2, 3 & 4
+            #   - Send across desired wheel orientation
+            #   - Send acroos desired hub motor state
+            #   - Send across desured hub motor throttle
+            #   - Read the actuator angle
+            #   - Read the controller output
+            
+            # Update Central Arduino
+            #   - Read the state of the Arduino
+            #   - Compare RPi state to read arduino state, decide which is high priority
+            #   - Update Arduino state if nessecary,
+            #   - Battery 1 & 2 Read
+            #   - Current Transducer Read

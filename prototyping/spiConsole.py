@@ -6,10 +6,10 @@ spi = spidev.SpiDev()
 spi.open(0, 0)
 
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(22, GPIO.OUT)
-GPIO.output(22, GPIO.HIGH)
+GPIO.setup(5, GPIO.OUT)
+GPIO.output(5, GPIO.HIGH)
 time.sleep(0.5)
-GPIO.output(22, GPIO.LOW)
+GPIO.output(5, GPIO.LOW)
 
 while True:
     outgoing = int(input("Send >"))
