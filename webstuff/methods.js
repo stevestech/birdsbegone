@@ -9,7 +9,7 @@ $(function() {
 	
 	$(".buttonset").buttonset();
 	
-	$("#throttle .slider").slider({
+		$("#throttle .slider").slider({
 		value: 0,
 		min: 0,
 		max: 255,
@@ -32,6 +32,17 @@ $(function() {
 		value: 0,
 		max: 255
 	});
+	
+	$("#control .angle-setpoint .slider").slider({
+		value: 500,
+		min: 0,
+		max: 255,
+	});
+	
+	$("#control .angle-measured .bar").progressbar({
+		value: 0,
+		max: 1023
+	)};
 });
 
 

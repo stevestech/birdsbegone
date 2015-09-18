@@ -88,58 +88,6 @@ body {
 }
 
 
-#fl-forward {
-	margin-top: 25px;
-}
-
-#fl-forward .label {
-	display: inline-block;
-	position: relative;
-	top: 2px;
-	width: 100px;
-}
-
-#fl-forward .value {
-	display: inline-block;
-	margin-left: -290px;
-	position: relative;
-	top: 2px;
-	width: 13px;
-}
-
-#fl-forward .button {
-	display: inline-block;
-	margin-left: 170px;
-	width: 75px;
-	height: 75px;
-}
-
-#fl-reverse {
-	margin-top: 25px;
-}
-
-#fl-reverse .label {
-	display: inline-block;
-	position: relative;
-	top: 2px;
-	width: 100px;
-	
-}
-
-#fl-reverse .value {
-	display: inline-block;
-	margin-left: -290px;
-	position: relative;
-	top: 2px;
-	width: 13px;
-}
-
-#fl-reverse .button {
-	display: inline-block;
-	margin-left: 170px;
-	width: 75px;
-	height: 75px;
-}
 
 
 #fl-angle {
@@ -155,30 +103,26 @@ body {
 
 #fl-angle .value {
 	display: inline-block;
-	margin-left: -40px;
+	margin-left: 5px;
 	position: relative;
 	top: 2px;
 	width: 13px;
 }
 
-#fl-angle .decrease {
+#fl-angle .buttonset {
 	display: inline-block;
-	margin-left: 80px;
-	width: 75px;
-	height: 75px;
+	margin-left: 30px;
 }
 
 #fl-angle .slider {
 	display: inline-block;
-	margin-left: 10px;
+	margin-left: 20px;
 	top: 2px;
 }
 
 #fl-angle .increase {
 	display: inline-block;
-	margin-left: 120px;
-	width: 75px;
-	height: 75px;
+	margin-left: 20px;
 }
 
 
@@ -211,19 +155,18 @@ body {
 
 
 
-
-#fl-robotangle {
+#fl-actuator {
 	margin-top: 25px;
 }
 
-#fl-robotangle .label {
+#fl-actuator .label {
 	display: inline-block;
 	position: relative;
 	bottom: 10px;
 	width: 100px;
 }
 
-#fl-robotangle .value {
+#fl-actuator .value {
 	display: inline-block;
 	margin-left: 5px;
 	position: relative;
@@ -231,10 +174,131 @@ body {
 	width: 13px;
 }
 
-#fl-robotangle .bar {
+#fl-actuator .bar {
 	display: inline-block;
 	margin-left: 30px;
 	/* Width is calculated in JavaScript */
+}
+	
+
+
+#control #angle-measured {
+	margin-top: 25px;
+}
+
+#control #angle-measured .label {
+	display: inline-block;
+	position: relative;
+	bottom: 10px;
+	width: 100px;
+}
+
+#control #angle-measured .value {
+	display: inline-block;
+	margin-left: 5px;
+	position: relative;
+	bottom: 10px;
+	width: 13px;
+}
+
+#control #angle-measured .bar {
+	display: inline-block;
+	margin-left: 30px;
+	/* Width is calculated in JavaScript */
+}
+
+
+#control .forward {
+	margin-top: 25px;
+}
+
+#control .forward .label {
+	display: inline-block;
+	position: relative;
+	top: 2px;
+	width: 100px;
+}
+
+#control .forward .value {
+	display: inline-block;
+	margin-left: -290px;
+	position: relative;
+	top: 2px;
+	width: 13px;
+}
+
+#control .forward .button {
+	display: inline-block;
+	margin-left: 170px;
+	width: 75px;
+	height: 75px;
+}
+
+
+
+
+#control .reverse {
+	margin-top: 25px;
+}
+
+#control .reverse .label {
+	display: inline-block;
+	position: relative;
+	top: 2px;
+	width: 100px;
+	
+}
+
+#control .reverse .value {
+	display: inline-block;
+	margin-left: -290px;
+	position: relative;
+	top: 2px;
+	width: 13px;
+}
+
+#control .reverse .button {
+	display: inline-block;
+	margin-left: 170px;
+	width: 75px;
+	height: 75px;
+}
+
+
+
+
+#control .angle-setpoint {
+	margin-top: 25px;
+}
+
+#control .angle-setpoint .label {
+	display: inline-block;
+	position: relative;
+	top: 2px;
+	width: 100px;
+	
+}
+
+#control .angle-setpoint .value {
+	display: inline-block;
+	margin-left: -40px;
+	position: relative;
+	top: 2px;
+	width: 13px;
+}
+
+#control .angle-setpoint .left {
+	display: inline-block;
+	margin-left: 80px;
+	width: 75px;
+	height: 75px;
+}
+
+#control .angle-setpoint .right {
+	display: inline-block;
+	margin-left: 120px;
+	width: 75px;
+	height: 75px;
 }
 
 
