@@ -8,13 +8,11 @@
 
 class Relays {
     private:
-		// PRIVATE VARS INIT HERE
+	// PRIVATE VARS INIT HERE
         
     public:
-        Buttons(void);
+        Relays(void);
         void update(void);
-        //void setThrottle(uint8_t *newThrottle);
-        //void setState(uint8_t *newState);
 };
 
 
