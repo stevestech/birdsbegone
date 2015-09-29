@@ -32,11 +32,11 @@ class SPI:
                'MASTER_ECHO_FAILED': chr(255) }
     
     # Slave select pins
-    ssPins = { 'POWER_CONTROL': 27,
-               'FRONT_LEFT': 22,
-               'FRONT_RIGHT': 23,
-               'BACK_LEFT': 24,
-               'BACK_RIGHT': 25 }
+    ssPins = { 'POWER_CONTROL': 5,
+               'FRONT_LEFT': 6,
+               'FRONT_RIGHT': 13,
+               'BACK_LEFT': 19,
+               'BACK_RIGHT': 26 }
                
     bufferSize = 32
     attemptsPerByte = 3
@@ -49,7 +49,7 @@ class SPI:
         
         # Dict of errors, containing only error codes detected by the slave. This subset of the "errors"
         # dict is extracted using a Python "list comprehension"
-        self.slaveErrors = dict((key, value) for key, value in SPI.errors.iteritems() if SPI.slaveErrorMin >= 252)
+        self.slaveErrors = dict((key, value) for key, value in SPI.errors.iteritems() if ord(value) >= SPI.slaveErrorMin)
         
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
