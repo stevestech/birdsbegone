@@ -5,7 +5,7 @@
 
 // Constructor
 Actuator::Actuator(void) {
-    uint8_t const maxControllerOutput = ACTUATOR_PWM_MAX - ACTUATOR_PWM_MIN;\
+    uint8_t const maxControllerOutput = ACTUATOR_PWM_MAX - ACTUATOR_PWM_MIN;
     unsafeOrientation = false;
     
     /*
