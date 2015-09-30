@@ -80,6 +80,10 @@
  
 #include <stdint.h>
 #include "buffer.h"
+#include "buttons.h"
+#include "relays.h"
+#include "battery.h"
+#include "central_states"
 
 // The largest expected data string must fit inside this buffer
 #define STRING_BUFFER_SIZE              32
@@ -155,14 +159,14 @@ class SpiSlave {
         bool firstByte;
         
         void reset(void);
-        void executeIncomingCommand(void);
-        void executeReceivedString(void);
+        void executeIncomingCommand(uint8_t *current_state);
+        void executeReceivedString(uint8_t *current_state);
         uint8_t *getShutdownError(void);
         
     public:
         SpiSlave(void);
         ~SpiSlave();
-        void update(void);
+        void update(uint8_t *current_state);
 };
     
 

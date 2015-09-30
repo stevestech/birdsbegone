@@ -1,11 +1,18 @@
 #include <Arduino.h>
 
+#include "timer.h"
 #include "buttons.h"
 
 Buttons::Buttons(void) {
-    SPI_recieved = false;
-	shutting_down = false;
-    
+	// Init private variables
+	start_flashing = true;
+	
+    start_led_state = START_LED_OFF;
+	prev_start_led_state = start_led_state;
+	stop_led_state = STOP_LED_OFF;
+	prev_stop_led_state = stop_led_state;
+	
+	start_current_time = millis();
     /*
      * Setup GPIO
      **/
@@ -17,45 +24,64 @@ Buttons::Buttons(void) {
     digitalWrite(START_LED, LOW);
 }
 
-void Buttons::update(void) {
-	
-	// Update start LED button status
-	if (SPI_recieved)
-	{
-		digitalWrite(START_LED, HIGH);
-	}
-	else
-	{
-		// FLASH START LED USING TIMERS
-	}
-	
-	// UPDATE RED LED STATUS
-	if (shutting_down)
-	{
-		digitalWrite(START_LED, HIGH);
-	}
-	
-	// READ RED BUTTON STATUS (USE INTERRUPTS, OR POLL??)
-	// WHEN TRIGGERED, SEND SHUTDOWN COMMAND TO RPI, THEN SHUTDOWN AFTER 30 SECONDS
-}
+void Buttons::update(uint8_t *current_state) {
+	/* ---------- UPDATE BUTTONS STATES DEPENDING CENTRAL ARDUINO STATE ---------- */
+	switch(*current_state) {
+    default:
+    case STATE_STARTING_UP:
+        start_led_state = START_LED_ON;
+		start_flashing = true;
+		stop_led_state = STOP_LED_OFF;
+        break;
 
-/*
-void HubMotor::setThrottle(uint8_t *newThrottle) {
-    throttle = *newThrottle;
-}
+    case STATE_RUNNING:
+        start_led_state = START_LED_ON;
+        start_flashing = false;
+        stop_led_state = STOP_LED_OFF;
+        break;
 
-
-void HubMotor::setState(uint8_t *newState) {
-    if ((*newState == STATE_NEUTRAL) ||
-        (*newState == STATE_BRAKING) ||
-        (*newState == STATE_FORWARD) ||
-        (*newState == STATE_REVERSE)) {
-            
-        state = *newState;
-    }
-    
-    else {
-        state = STATE_NEUTRAL;
-    }
+    case STATE_SHUTTING_DOWN:
+        start_led_state = START_LED_OFF;
+		start_flashing = true;
+		stop_led_state = STOP_LED_ON;
+        break;
+    }    
+	
+	/* ---------- START LED UPDATE ---------- */
+	
+	// Update start LED on/off when state changes
+	if (start_led_state != prev_start_led_state)
+	{
+		digitalWrite(START_LED, start_led_state);
+		prev_start_led_state = start_led_state;
+	}
+	
+	// Flash start led @ START_LED_FLASHING_RATE times per second
+	if (start_flashing == true)
+	{
+		if (millis() - start_current_time >= (1/START_LED_FLASHING_RATE)*1000)
+		{
+			start_current_time = millis();
+			start_led_state = !start_led_state;
+		}
+	}
+	
+	/* ---------- STOP LED UPDATE ---------- */
+	
+	// Update stop LED on/off when state changes
+	if (stop_led_state != prev_stop_led_state)
+	{
+		digitalWrite(START_LED, stop_led_state);
+		prev_stop_led_state = stop_led_state;
+	}
+	
+	/* ---------- STOP READ ---------- */
+	
+	// When stop button is pressed, swap state to shutting down.
+	// NEED TO CHECK IF CAN JUST DIGITAL READ THE GPIO PORT!
+	// POTENTIALLY PLACE THIS ON AN INTERRUPT?
+	if (digitalRead(STOP_READ) == true)
+	{
+		*current_state = STATE_SHUTTING_DOWN; 
+	}
 }
-*/

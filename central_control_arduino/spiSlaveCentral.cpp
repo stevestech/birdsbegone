@@ -4,7 +4,7 @@
 #include <string.h>
 
 // See header file for a description of the protocol used.
-#include "spiSlave.h"
+#include "spiSlaveCentral.h"
 #include "stringToUint.h"
 
 
@@ -98,7 +98,7 @@ void SpiSlave::reset(void) {
 }
 
 
-void SpiSlave::update(void) {
+void SpiSlave::update(uint8_t *current_state) {
     if (slaveSelectFallingEdge) {
         slaveSelectFallingEdge = false;
         reset();
@@ -112,7 +112,7 @@ void SpiSlave::update(void) {
         if ((!stringBuffer->isSending()) &&
             (!stringBuffer->isReceiving())) {
               
-            executeIncomingCommand();
+            executeIncomingCommand(current_state);
         }
         
         else if ((stringBuffer->isReceiving()) &&
@@ -122,7 +122,7 @@ void SpiSlave::update(void) {
                 
             if (stringBuffer->isReceivingComplete()) {
                 // Woot! We got the string, now do something with it.
-                executeReceivedString();
+                executeReceivedString(current_state);
             }
         }
         
@@ -148,24 +148,24 @@ void SpiSlave::update(void) {
 }
 
 
-void SpiSlave::executeIncomingCommand() {
+void SpiSlave::executeIncomingCommand(uint8_t *current_state) {
     switch(incomingByte) {
-        case LOAD_SHUTDOWN_STATUS:
-            //stringBuffer->loadWithOutgoingData(actuator->getMeasuredOrientation());
+        case LOAD_CENTRAL_ARDUINO_STATE:
+            stringBuffer->loadWithOutgoingData(*current_state);
             break;
             
         case LOAD_24V_READING:
-            //stringBuffer->loadWithOutgoingData(actuator->getControllerOutput());
+            stringBuffer->loadWithOutgoingData(battery->getBattery24VReading());
             break;
             
         case LOAD_12V_READING:
-            //stringBuffer->loadWithOutgoingData(getShutdownError());
+            stringBuffer->loadWithOutgoingData(battery->getBattery12VReading());
             break;
 		
 		case LOAD_ENERGY_CONSUMED:
-            //stringBuffer->loadWithOutgoingData(getShutdownError());
+            stringBuffer->loadWithOutgoingData(battery->getEnergyConsumed());
             break;
-            
+			
         default:
             errorCondition = COMMAND_NOT_RECOGNISED;
             break;
@@ -173,14 +173,10 @@ void SpiSlave::executeIncomingCommand() {
 }
 
 
-void SpiSlave::executeReceivedString(void) {
+void SpiSlave::executeReceivedString(uint8_t *current_state) {
     switch(purposeForIncomingString) {
         case RECEIVE_SHUTDOWN_CMD:
-            // Update the steering PID controller with a new setpoint from the SPI master
-            //uint16_t newSetpoint;
-            //if (stringToUint(stringBuffer->buffer, &newSetpoint)) {
-            //    actuator->setDesiredOrientation(&newSetpoint);
-            //}
+            *current_state = STATE_SHUTTING_DOWN;
             break;
     }    
 }
