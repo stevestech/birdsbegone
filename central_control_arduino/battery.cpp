@@ -7,6 +7,9 @@ Battery::Battery(void) {
 	battery_12v_reading = analogRead(BATTERY_READ_2);
 	energy_consumed = analogRead(CURRENT_SENSE);
 	
+	read_batteries = false;
+	read_transducer = true;
+	
     /*
      * Setup GPIO
      **/
@@ -16,17 +19,46 @@ Battery::Battery(void) {
 }
 
 void Battery::update(uint8_t *current_state) {
-	if (*current_state == STATE_RUNNING)
+	switch(*current_state) {
+    default:
+    case STATE_STARTING_UP:
+        read_batteries = false;
+		read_transducer = true;
+        break;
+
+    case STATE_RUNNING:
+		read_transducer = true;
+		read_transducer = true;
+        break;
+
+    case STATE_SHUTTING_DOWN:
+        read_batteries = false;
+		read_transducer = false;
+        break;
+	
+	case STATE_EMERGENCY_STOP:
+		read_batteries = true;
+		read_transducer = true;
+        break;
+		
+	case STATE_POWER_DOWN:
+		read_batteries = false;
+		read_transducer = false;
+        break;
+    } 
+	
+	/* --------- UPDATE BATTERY VOLTAGE READ ---------- */
+	if (read_batteries == true)
 	{
-		// If in state running, continually update the battery readings:
-		// battery 24v analog read + conversion
-		// battery 12v analog read + conversion
-		// battery current sense analog read + conversion
+		// READ DA BATTERY VOLTAGE, NEED EQNS
 	}
-	else
+	
+	/* --------- UPDATE CURRENT TRANSDUCER ---------- */
+	if (read_transducer == true)
 	{
-		// else declare all variables null or zero or something? To show they are not being read atm
+		// READ IN THE TRANDUCER, DUNNO HOW TO DO THIS??
 	}
+		
 }
 
 double *Battery::getBattery24VReading(void) {

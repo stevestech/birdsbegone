@@ -136,6 +136,7 @@
  * inform the slave how to behave.
  **/ 
 #define RECIEVE_SHUTDOWN_CMD			0
+#define RECEIVE_RUNNING_CMD				1
 
 #define LOAD_SHUTDOWN_STATUS		    100
 #define LOAD_24V_READING		        101

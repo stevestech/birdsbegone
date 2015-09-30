@@ -150,6 +150,21 @@ void SpiSlave::update(uint8_t *current_state) {
 
 void SpiSlave::executeIncomingCommand(uint8_t *current_state) {
     switch(incomingByte) {
+		// Instead of three three different receive cmds, could just have a single receive commands
+		// which receives a single char to set the state?? Allows to simplify code, but dunno if its
+		// worth the implementation time?
+		case RECEIVE_SHUTDOWN_CMD:
+            *current_state = STATE_SHUTTING_DOWN;
+            break;
+			
+		case RECEIVE_RUNNING_CMD:
+            *current_state = STATE_RUNNING;
+            break;
+			
+		case RECEIVE_EMERGENCY_STOP_CMD:
+            *current_state = STATE_EMERGENCY_STOP;
+            break;
+			
         case LOAD_CENTRAL_ARDUINO_STATE:
             stringBuffer->loadWithOutgoingData(*current_state);
             break;
@@ -175,9 +190,7 @@ void SpiSlave::executeIncomingCommand(uint8_t *current_state) {
 
 void SpiSlave::executeReceivedString(uint8_t *current_state) {
     switch(purposeForIncomingString) {
-        case RECEIVE_SHUTDOWN_CMD:
-            *current_state = STATE_SHUTTING_DOWN;
-            break;
+		// INPUT SWITCH CASES FOR RECIEVING STRING
     }    
 }
 

@@ -5,5 +5,7 @@
 #define STATE_STARTING_UP				0
 #define STATE_RUNNING					1
 #define STATE_SHUTTING_DOWN				2
+#define STATE_EMERGENCY_STOP			3
+#define STATE_POWER_DOWN				4
 
 #endif

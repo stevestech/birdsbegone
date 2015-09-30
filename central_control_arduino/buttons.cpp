@@ -6,13 +6,16 @@
 Buttons::Buttons(void) {
 	// Init private variables
 	start_flashing = true;
+	stop_flashing = false;
 	
     start_led_state = START_LED_OFF;
 	prev_start_led_state = start_led_state;
 	stop_led_state = STOP_LED_OFF;
 	prev_stop_led_state = stop_led_state;
 	
-	start_current_time = millis();
+	start_led_current_time = millis();
+	stop_led_current_time = millis();
+	
     /*
      * Setup GPIO
      **/
@@ -25,6 +28,7 @@ Buttons::Buttons(void) {
 }
 
 void Buttons::update(uint8_t *current_state) {
+	
 	/* ---------- UPDATE BUTTONS STATES DEPENDING CENTRAL ARDUINO STATE ---------- */
 	switch(*current_state) {
     default:
@@ -32,18 +36,35 @@ void Buttons::update(uint8_t *current_state) {
         start_led_state = START_LED_ON;
 		start_flashing = true;
 		stop_led_state = STOP_LED_OFF;
+		stop_flashing = false;
         break;
 
     case STATE_RUNNING:
         start_led_state = START_LED_ON;
         start_flashing = false;
         stop_led_state = STOP_LED_OFF;
+		stop_flashing = false;
         break;
 
     case STATE_SHUTTING_DOWN:
         start_led_state = START_LED_OFF;
 		start_flashing = true;
 		stop_led_state = STOP_LED_ON;
+		stop_flashing = false;
+        break;
+	
+	case STATE_EMERGENCY_STOP:
+        start_led_state = START_LED_ON;
+		start_flashing = true;
+		stop_led_state = STOP_LED_ON;
+		stop_flashing = true;
+        break;
+	
+	case STATE_POWER_DOWN:
+        start_led_state = START_LED_OFF;
+		start_flashing = false;
+		stop_led_state = STOP_LED_OFF;
+		stop_flashing = false;
         break;
     }    
 	
@@ -59,9 +80,9 @@ void Buttons::update(uint8_t *current_state) {
 	// Flash start led @ START_LED_FLASHING_RATE times per second
 	if (start_flashing == true)
 	{
-		if (millis() - start_current_time >= (1/START_LED_FLASHING_RATE)*1000)
+		if (millis() - start_led_current_time >= (1/START_LED_FLASHING_RATE)*1000)
 		{
-			start_current_time = millis();
+			start_led_current_time = millis();
 			start_led_state = !start_led_state;
 		}
 	}
@@ -75,13 +96,22 @@ void Buttons::update(uint8_t *current_state) {
 		prev_stop_led_state = stop_led_state;
 	}
 	
+	// Flash start led @ STOP_LED_FLASHING_RATE times per second
+	if (stop_flashing == true)
+	{
+		if (millis() - stop_led_current_time >= (1/STOP_LED_FLASHING_RATE)*1000)
+		{
+			stop_led_current_time = millis();
+			stop_led_state = !stop_led_state;
+		}
+	}
+	
 	/* ---------- STOP READ ---------- */
 	
 	// When stop button is pressed, swap state to shutting down.
-	// NEED TO CHECK IF CAN JUST DIGITAL READ THE GPIO PORT!
-	// POTENTIALLY PLACE THIS ON AN INTERRUPT?
+	// DIGITAL READ UNTESTED FOR BUTTON!!
 	if (digitalRead(STOP_READ) == true)
 	{
-		*current_state = STATE_SHUTTING_DOWN; 
+		*current_state = STATE_SHUTTING_DOWN;
 	}
 }

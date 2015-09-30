@@ -5,12 +5,14 @@
 #include "buttons.h"
 #include "relays.h"
 #include "battery.h"
+#include "timers.h"
 #include "central_states"
 
 SpiSlave spiSlave();
 Buttons buttons();
 Relays relays();
 Battery battery();
+Timers timers();
 
 void setup(void) {
     Serial.begin(9600);
@@ -22,4 +24,5 @@ void loop(void) {
 	relays.update(&central_arduino_state);
 	battery.update(&central_arduino_state);
 	spiSlave.update(&central_arduino_state);
+	timers.update(&central_arduino_state);
 }
