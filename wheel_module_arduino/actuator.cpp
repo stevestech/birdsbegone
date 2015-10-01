@@ -4,9 +4,10 @@
 #include "actuator.h"
 
 // Constructor
-Actuator::Actuator(void) {
+Actuator::Actuator(bool *emergencyStop) {
     uint8_t const maxControllerOutput = ACTUATOR_PWM_MAX - ACTUATOR_PWM_MIN;
-    unsafeOrientation = false;
+
+    this->emergencyStop = emergencyStop;
     
     /*
      * Setup PID Controller
@@ -62,45 +63,47 @@ Actuator::~Actuator(void) {
 }    
 
 
-void Actuator::update(void) {
+void Actuator::update() {
     // Get current wheel orientation from potentiometer
     measuredOrientation = analogRead(PIN_A_POSITION_SENSE);
     
     // Protect the potentiometer
     if ((measuredOrientation > WHEEL_ORIENTATION_SHUTDOWN_MAX) ||
         (measuredOrientation < WHEEL_ORIENTATION_SHUTDOWN_MIN)) {
-            
+          
+        *emergencyStop = true;
+    }
+    
+    if (*emergencyStop) {
         analogWrite(PIN_A_THROTTLE_CW, 0);
         analogWrite(PIN_A_THROTTLE_ACW, 0);
         
         // Only a restart will be able to re-enable these
         digitalWrite(PIN_A_ENABLE_CW, HIGH);
         digitalWrite(PIN_A_ENABLE_ACW, HIGH);
-            
-        unsafeOrientation = true;
+    }
+    
+    else {
+        // Run the PID controller to get a control signal
+        controller->Compute();
+        
+        // Provide controller output to steering actuator driver
+        setMotor();
     }    
-    
-    // Run the PID controller to get a control signal
-    controller->Compute();
-    
-    // Provide controller output to steering actuator driver
-    setMotor();
 }
 
 
 void Actuator::setMotor(void) {
-    if (!unsafeOrientation) {
-        // Move in clockwise direction
-        if (controllerOutput >= 0) {
-            analogWrite(PIN_A_THROTTLE_ACW, 0);
-            analogWrite(PIN_A_THROTTLE_CW, (uint8_t)(controllerOutput + ACTUATOR_PWM_MIN));
-        }
-        
-        // Move in anticlockwise direction
-        else {
-            analogWrite(PIN_A_THROTTLE_CW, 0);
-            analogWrite(PIN_A_THROTTLE_ACW, (uint8_t)(controllerOutput * -1 + ACTUATOR_PWM_MIN));
-        }
+    // Move in clockwise direction
+    if (controllerOutput >= 0) {
+        analogWrite(PIN_A_THROTTLE_ACW, 0);
+        analogWrite(PIN_A_THROTTLE_CW, (uint8_t)(controllerOutput + ACTUATOR_PWM_MIN));
+    }
+    
+    // Move in anticlockwise direction
+    else {
+        analogWrite(PIN_A_THROTTLE_CW, 0);
+        analogWrite(PIN_A_THROTTLE_ACW, (uint8_t)(controllerOutput * -1 + ACTUATOR_PWM_MIN));
     }
 }
 
@@ -126,3 +129,17 @@ void Actuator::setDesiredOrientation(uint16_t *newOrientation) {
 double *Actuator::getControllerOutput(void) {
     return &controllerOutput;
 }
+
+
+uint16_t Actuator::readStatusL(void) {
+    return analogRead(PIN_A_STATUS_L);
+}
+
+
+uint16_t Actuator::readStatusR(void) {
+    return analogRead(PIN_A_STATUS_R);
+}
+
+
+
+

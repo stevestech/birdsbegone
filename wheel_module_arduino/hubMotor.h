@@ -18,16 +18,20 @@
 #define PWM_MIN                         0
 
 
+void incrementSpeedSensorCount(void);
+
 class HubMotor {
     private:
         uint8_t state;
         uint8_t throttle;
+        bool *emergencyStop;
         
     public:
-        HubMotor(void);
+        HubMotor(bool *emergencyStop);
         void update(void);
         void setThrottle(uint8_t *newThrottle);
         void setState(uint8_t *newState);
+        uint16_t getWheelSpeed(void);
 };
 
 

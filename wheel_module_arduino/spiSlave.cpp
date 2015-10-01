@@ -51,11 +51,12 @@ ISR (PCINT0_vect) {
 
 
 // Constructor
-SpiSlave::SpiSlave(Actuator *actuator, HubMotor *hubMotor) {
+SpiSlave::SpiSlave(bool *emergencyStop, Actuator *actuator, HubMotor *hubMotor) {
     stringBuffer = new Buffer(STRING_BUFFER_SIZE);
     
     this->actuator = actuator;
     this->hubMotor = hubMotor;
+    this->emergencyStop = emergencyStop;
     
     /*
      * Setup GPIO
@@ -153,6 +154,8 @@ void SpiSlave::update(void) {
 
 
 void SpiSlave::executeIncomingCommand() {
+    uint16_t data;
+  
     switch(incomingByte) {
         case RECEIVE_A_ORIENTATION:
             // Update the steering PID controller with a new setpoint from the SPI master
@@ -182,8 +185,26 @@ void SpiSlave::executeIncomingCommand() {
             stringBuffer->loadWithOutgoingData(actuator->getControllerOutput());
             break;
             
-        case LOAD_SHUTDOWN_ERROR:
-            stringBuffer->loadWithOutgoingData(getShutdownError());
+        case LOAD_EMERGENCY_STOP:
+            stringBuffer->loadWithOutgoingData(emergencyStop);
+            break;
+            
+        case LOAD_ACTUATOR_STATUS_L:
+            data = actuator->readStatusL();
+            stringBuffer->loadWithOutgoingData(&data);
+            break;
+            
+        case LOAD_ACTUATOR_STATUS_R:
+            data = actuator->readStatusR();        
+            stringBuffer->loadWithOutgoingData(&data);
+            break;
+            
+        case LOAD_HUB_MOTOR_SPEED:
+            data = hubMotor->getWheelSpeed();
+            stringBuffer->loadWithOutgoingData(&data);
+        
+        case SET_EMERGENCY_STOP:
+            *emergencyStop = true;
             break;
             
         default:
@@ -219,20 +240,5 @@ void SpiSlave::executeReceivedString(void) {
             }
             break;
     }    
-}
-
-
-uint8_t *SpiSlave::getShutdownError(void) {
-    uint8_t error;
-    
-    if (actuator->unsafeOrientation) {
-        error = UNSAFE_ORIENTATION_SHUTDOWN;
-    }
-    
-    else {
-        error = ALL_OK;
-    }
-    
-    return &error;
 }
 

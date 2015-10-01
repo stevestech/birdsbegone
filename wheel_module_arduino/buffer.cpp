@@ -26,6 +26,21 @@ void Buffer::reset(void) {
 }
 
 
+void Buffer::loadWithOutgoingData(bool *data) {
+    char output;
+  
+    if (*data) {
+        output = '1';
+    }
+
+    else {
+        output = '0';
+    }
+    
+    loadWithOutgoingData(&output);
+}    
+
+
 // The load methods will accept a string, double, uint16_t or uint8_t,
 // convert numeric values into a string and load it onto the buffer.
 void Buffer::loadWithOutgoingData(char *data) {

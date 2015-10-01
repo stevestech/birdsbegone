@@ -48,6 +48,7 @@ class Buffer {
         ~Buffer(void);
         void reset(void);
         
+        void loadWithOutgoingData(bool *data);
         void loadWithOutgoingData(char *data);
         void loadWithOutgoingData(double *data);
         void loadWithOutgoingData(uint16_t *data);

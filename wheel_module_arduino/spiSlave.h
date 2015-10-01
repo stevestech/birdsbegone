@@ -118,16 +118,6 @@
 
 
 /*
- * SHUTDOWN ERROR CODES
- *
- * Used by the master to query if anything has gone wrong in hardware.
- **/
- 
-#define ALL_OK                              0
-#define UNSAFE_ORIENTATION_SHUTDOWN         1
-
-
-/*
  * SPI COMMANDS
  *
  * These imperatives are sent from the SPI master and
@@ -139,8 +129,12 @@
  
 #define LOAD_A_MEASURED_ORIENTATION     100
 #define LOAD_A_CONTROLLER_OUTPUT        101
-#define LOAD_SHUTDOWN_ERROR             102
+#define LOAD_EMERGENCY_STOP             102
+#define LOAD_ACTUATOR_STATUS_L          103
+#define LOAD_ACTUATOR_STATUS_R          104
+#define LOAD_HUB_MOTOR_SPEED            105
 
+#define SET_EMERGENCY_STOP              255
 
 class SpiSlave {
     private:
@@ -159,14 +153,14 @@ class SpiSlave {
     
         Actuator *actuator;
         HubMotor *hubMotor;
+        bool *emergencyStop;
         
         void reset(void);
         void executeIncomingCommand(void);
         void executeReceivedString(void);
-        uint8_t *getShutdownError(void);
         
     public:
-        SpiSlave(Actuator *actuator, HubMotor *hubMotor);
+        SpiSlave(bool *emergencyStop, Actuator *actuator, HubMotor *hubMotor);
         ~SpiSlave();
         void update(void);
 };

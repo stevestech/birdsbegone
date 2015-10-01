@@ -9,9 +9,9 @@
 #define PIN_A_ENABLE_CW                 0      // D0
 #define PIN_A_ENABLE_ACW                1      // D1
 
-#define PIN_A_POSITION_SENSE            0      // A0
-#define PIN_A_STATUS_L                  1      // A1
-#define PIN_A_STATUS_R                  2      // A2
+#define PIN_A_POSITION_SENSE            7      // A7
+#define PIN_A_STATUS_L                  6      // A6
+#define PIN_A_STATUS_R                  5      // A5
 
 /*
  * PWM Stuff
@@ -60,18 +60,19 @@ class Actuator {
         double measuredOrientation;
         double controllerOutput;
         PID* controller;
+        bool *emergencyStop;
         
         void setMotor(void);
         
     public:
-        bool unsafeOrientation;
-        
-        Actuator(void);
+        Actuator(bool *emergencyStop);
         ~Actuator(void);
         void update(void);
         double *getMeasuredOrientation(void);
         double *getControllerOutput(void);
         void setDesiredOrientation(uint16_t *newOrientation);
+        uint16_t readStatusL(void);
+        uint16_t readStatusR(void);
 };
 
 #endif
