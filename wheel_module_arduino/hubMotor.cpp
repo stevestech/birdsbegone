@@ -29,7 +29,7 @@ HubMotor::HubMotor(bool *emergencyStop) {
     attachInterrupt(digitalPinToInterrupt(2), incrementSpeedSensorCount, RISING);
     
     // Enable overflow interrupts for timer 1
-    bitSet(TIMSK1, TOIE1);    
+    bitSet(TIMSK1, TOIE1);
 }
 
 
@@ -94,7 +94,7 @@ void incrementSpeedSensorCount(void) {
 
 
 // Timer 1 overflow handler, use to determine wheel speed
-ISR(TIMER1_OVF_VECT) {
+ISR(TIMER1_OVF_vect) {
     wheelSpeedPrevious = wheelSpeedCurrent;
     wheelSpeedCurrent = 0;
 }
