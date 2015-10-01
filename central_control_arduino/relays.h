@@ -2,19 +2,26 @@
 #define RELAYS_H
 
 #include <stdint.h>
+#include "central_states"
 
-#define DPCO_RELAY_GATE					10     // D10
-#define SPNO_RELAY_GATE					11     // D11
+#define DPCO_RELAY_GATE					7     // D7
+#define SPNO_RELAY_GATE					8     // D8
+
+// Relay states
+#define DPCO_OFF						0
+#define DPCO_ON							1
+#define SPNO_OFF						0
+#define SPNO_ON							1
 
 class Relays {
     private:
-		// PRIVATE VARS INIT HERE
-        
+		uint8_t dpco_state;
+		uint8_t prev_dpco_state;
+		uint8_t spno_state;
+		uint8_t prev_spno_state;
     public:
-        Buttons(void);
-        void update(void);
-        //void setThrottle(uint8_t *newThrottle);
-        //void setState(uint8_t *newState);
+        Relays(void);
+        void update(uint8_t *current_state);
 };
 
 

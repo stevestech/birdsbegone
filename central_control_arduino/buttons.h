@@ -2,32 +2,40 @@
 #define BUTTONS_H
 
 #include <stdint.h>
+#include "central_states"
 
 // Hub motor pins
-#define STOP_LED              			5      // D5
-#define STOP_READ                       6      // D6
-#define START_LED						7      // D7
+#define STOP_LED              			2      	// D2
+#define STOP_READ                       3      	// D3
+#define START_LED						4      	// D4
 
-// MOVE THESE INTO ANOTHER MODULE
-#define DPCO_RELAY_GATE					10     // D10
-#define SPNO_RELAY_GATE					11     // D11
+// LED states
+#define STOP_LED_OFF					0
+#define STOP_LED_ON						1
+#define START_LED_OFF					0
+#define START_LED_ON					1
 
-// MOVE THESE INTO ANOTHER MODULE
-#define CURRENT_SENSE					19 	   // A0
-#define BATTERY_READ_1					21	   // A2
-#define BATTERY_READ_2					20	   // A1
+#define STOP_LED_FLASHING_RATE			4		// Times per second
+#define START_LED_FLASHING_RATE			4		// Times per second
 
+// Timings
+#define SHUTDOWN_LENGTH					30000	// (ms)
 
 class Buttons {
     private:
-		bool SPI_recieved;
-		bool shutting_down;
+		bool start_flashing;
+		bool stop_flashing;
+		uint8_t start_led_state;
+		uint8_t prev_start_led_state;
+		uint8_t stop_led_state;
+		uint8_t prev_stop_led_state;
+		unsigned long start_led_current_time;
+		unsigned long stop_led_current_time;
         
     public:
         Buttons(void);
-        void update(void);
-        //void setThrottle(uint8_t *newThrottle);
-        //void setState(uint8_t *newState);
+        void update(uint8_t *current_state);
+		
 };
 
 

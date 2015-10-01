@@ -2,60 +2,65 @@
 
 #include "relays.h"
 
-Buttons::Buttons(void) {
-    SPI_recieved = false;
-	shutting_down = false;
-    
+Relays::Relays(void) {
+	dpco_state = DPCO_ON;
+	prev_dpco_state = dpco_state;
+	spno_state = SPNO_OFF;
+	prev_dpco_state = spno_state;
     /*
      * Setup GPIO
      **/
-    pinMode(STOP_LED, OUTPUT);
-    pinMode(STOP_READ, INPUT);
-    pinMode(START_LED, OUTPUT);
+	pinMode(DPCO_RELAY_GATE, OUTPUT);
+    pinMode(SPNO_RELAY_GATE, OUTPUT);
     
-    digitalWrite(STOP_LED, LOW);
-    digitalWrite(START_LED, LOW);
+	// Toggle on DPCO relay on start-up, latching power on.
+    digitalWrite(DPCO_RELAY_GATE, dpco_state);
+	// Keep hub motors off until fully turned on
+    digitalWrite(SPNO_RELAY_GATE, spno_state);
 }
 
-void Buttons::update(void) {
+void Relays::update(uint8_t *current_state) {
+	switch(*current_state) {
+    default:
+    case STATE_STARTING_UP:
+        dpco_state = DPCO_ON;
+		spno_state = SPNO_OFF;
+        break;
+
+    case STATE_RUNNING:
+        dpco_state = DPCO_ON;
+		spno_state = SPNO_ON;
+        break;
+
+    case STATE_SHUTTING_DOWN:
+        dpco_state = DPCO_ON;
+		spno_state = SPNO_OFF;
+        break;
 	
-	// Update start LED button status
-	if (SPI_recieved)
+	case STATE_EMERGENCY_STOP:
+		dpco_state = DPCO_ON;
+		spno_state = SPNO_OFF;
+        break;
+	
+	case STATE_POWER_DOWN:
+		dpco_state = DPCO_OFF;
+		spno_state = SPNO_OFF;
+        break;
+    }    
+	
+	/* --------- UPDATE DPCO STATE ---------- */
+	// Only update when state changes
+	if (dpco_state != prev_dpco_state)
 	{
-		digitalWrite(START_LED, HIGH);
-	}
-	else
-	{
-		// FLASH START LED USING TIMERS
+		digitalWrite(DPCO_RELAY_GATE, dpco_state);
+		prev_dpco_state = dpco_state;
 	}
 	
-	// UPDATE RED LED STATUS
-	if (shutting_down)
+	/* --------- UPDATE SPNO STATE ---------- */
+	// Only update when state changes
+	if (spno_state != prev_spno_state)
 	{
-		digitalWrite(START_LED, HIGH);
+		digitalWrite(SPNO_RELAY_GATE, spno_state);
+		prev_spno_state = spno_state;
 	}
-	
-	// READ RED BUTTON STATUS (USE INTERRUPTS, OR POLL??)
-	// WHEN TRIGGERED, SEND SHUTDOWN COMMAND TO RPI, THEN SHUTDOWN AFTER 30 SECONDS
 }
-
-/*
-void HubMotor::setThrottle(uint8_t *newThrottle) {
-    throttle = *newThrottle;
-}
-
-
-void HubMotor::setState(uint8_t *newState) {
-    if ((*newState == STATE_NEUTRAL) ||
-        (*newState == STATE_BRAKING) ||
-        (*newState == STATE_FORWARD) ||
-        (*newState == STATE_REVERSE)) {
-            
-        state = *newState;
-    }
-    
-    else {
-        state = STATE_NEUTRAL;
-    }
-}
-*/

@@ -1,14 +1,28 @@
 #include <PID_v1.h>
 #include <SPI.h>
 
-#include "spiSlave.h"
+#include "spiSlaveCentral.h"
+#include "buttons.h"
+#include "relays.h"
+#include "battery.h"
+#include "timers.h"
+#include "central_states"
 
-SpiSlave spiSlave(&actuator, &hubMotor);
+SpiSlave spiSlave();
+Buttons buttons();
+Relays relays();
+Battery battery();
+Timers timers();
 
 void setup(void) {
     Serial.begin(9600);
+	uint8_t central_arduino_state = STATE_STARTING_UP;
 }
 
 void loop(void) {
-    spiSlave.update();
+	buttons.update(&central_arduino_state);
+	relays.update(&central_arduino_state);
+	battery.update(&central_arduino_state);
+	spiSlave.update(&central_arduino_state);
+	timers.update(&central_arduino_state);
 }
