@@ -83,7 +83,8 @@
 #include "buttons.h"
 #include "relays.h"
 #include "battery.h"
-#include "central_states"
+#include "timers.h"
+#include "central_states.h"
 
 // The largest expected data string must fit inside this buffer
 #define STRING_BUFFER_SIZE              32
@@ -135,13 +136,15 @@
  * These imperatives are sent from the SPI master and
  * inform the slave how to behave.
  **/ 
-#define RECIEVE_SHUTDOWN_CMD			0
-#define RECEIVE_RUNNING_CMD				1
+#define RECEIVE_SHUTDOWN_CMD			0
+#define RECEIVE_RUNNING_CMD			1
+#define RECEIVE_EMERGENCY_STOP_CMD              2
 
 #define LOAD_SHUTDOWN_STATUS		    100
 #define LOAD_24V_READING		        101
 #define LOAD_12V_READING                102
 #define LOAD_ENERGY_CONSUMED			103
+#define LOAD_CENTRAL_ARDUINO_STATE          104
 
 
 class SpiSlave {
@@ -159,13 +162,16 @@ class SpiSlave {
         // Set to false after the first transfer
         bool firstByte;
         
+        Battery *battery;
+        Timers *timers;
+        
         void reset(void);
         void executeIncomingCommand(uint8_t *current_state);
         void executeReceivedString(uint8_t *current_state);
-        uint8_t *getShutdownError(void);
         
     public:
-        SpiSlave(void);
+        SpiSlave(Battery *battery, Timers *timers);
+        void init(void);
         ~SpiSlave();
         void update(uint8_t *current_state);
 };

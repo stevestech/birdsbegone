@@ -2,7 +2,7 @@
 #define RELAYS_H
 
 #include <stdint.h>
-#include "central_states"
+#include "central_states.h"
 
 #define DPCO_RELAY_GATE					7     // D7
 #define SPNO_RELAY_GATE					8     // D8
@@ -22,6 +22,7 @@ class Relays {
     public:
         Relays(void);
         void update(uint8_t *current_state);
+        void init(void);
 };
 
 

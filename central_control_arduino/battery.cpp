@@ -3,17 +3,17 @@
 #include "battery.h"
 
 Battery::Battery(void) {
-	battery_24v_reading = analogRead(BATTERY_READ_1);
-	battery_12v_reading = analogRead(BATTERY_READ_2);
-	energy_consumed = analogRead(CURRENT_SENSE);
+	battery_24v_reading = 0;
+	battery_12v_reading = 0;
+	energy_consumed = 0;
 	
 	read_batteries = false;
 	read_transducer = true;
-	
-    /*
-     * Setup GPIO
-     **/
-	pinMode(CURRENT_SENSE, INPUT);
+}
+
+void Battery::init()
+{
+    pinMode(CURRENT_SENSE, INPUT);
     pinMode(BATTERY_READ_1, INPUT);
     pinMode(BATTERY_READ_2, INPUT);
 }

@@ -7,7 +7,6 @@
 #include "spiSlaveCentral.h"
 #include "stringToUint.h"
 
-
 // avr-g++ initialises globals and statics to 0.
 // Volatile globals are accessed by interrupt service routines.
 volatile uint8_t incomingByte;
@@ -40,7 +39,6 @@ ISR (SPI_STC_vect) {
 // to receive an incoming command from the master.
 ISR (PCINT0_vect) {
     bool slaveSelect = digitalRead(SS);
-    
     // Detect falling edge
     if (!slaveSelect && slaveSelectPrevValue) {
         slaveSelectFallingEdge = true;
@@ -51,9 +49,15 @@ ISR (PCINT0_vect) {
 
 
 // Constructor
-SpiSlave::SpiSlave(void) {
+SpiSlave::SpiSlave(Battery *battery, Timers *timers) {
     stringBuffer = new Buffer(STRING_BUFFER_SIZE);
-	
+    
+    this->battery = battery;
+    this->timers = timers;
+}
+
+void SpiSlave::init()
+{
     /*
      * Setup GPIO
      **/
@@ -80,7 +84,6 @@ SpiSlave::SpiSlave(void) {
     reset();
 }
 
-
 SpiSlave::~SpiSlave(void) {
     delete stringBuffer;
 }
@@ -100,6 +103,7 @@ void SpiSlave::reset(void) {
 
 void SpiSlave::update(uint8_t *current_state) {
     if (slaveSelectFallingEdge) {
+        timers->spi_polled = true;
         slaveSelectFallingEdge = false;
         reset();
     }
@@ -109,9 +113,7 @@ void SpiSlave::update(uint8_t *current_state) {
         uint8_t outgoingByte = EMPTY_BYTE;
         
         // The first byte received from the master after SS falling edge will be a command byte.
-        if ((!stringBuffer->isSending()) &&
-            (!stringBuffer->isReceiving())) {
-              
+        if (firstByte) {
             executeIncomingCommand(current_state);
         }
         
@@ -153,20 +155,20 @@ void SpiSlave::executeIncomingCommand(uint8_t *current_state) {
 		// Instead of three three different receive cmds, could just have a single receive commands
 		// which receives a single char to set the state?? Allows to simplify code, but dunno if its
 		// worth the implementation time?
-		case RECEIVE_SHUTDOWN_CMD:
+	    case RECEIVE_SHUTDOWN_CMD:
             *current_state = STATE_SHUTTING_DOWN;
             break;
 			
-		case RECEIVE_RUNNING_CMD:
+	    case RECEIVE_RUNNING_CMD:
             *current_state = STATE_RUNNING;
             break;
 			
-		case RECEIVE_EMERGENCY_STOP_CMD:
+	   case RECEIVE_EMERGENCY_STOP_CMD:
             *current_state = STATE_EMERGENCY_STOP;
             break;
 			
         case LOAD_CENTRAL_ARDUINO_STATE:
-            stringBuffer->loadWithOutgoingData(*current_state);
+            stringBuffer->loadWithOutgoingData(current_state);
             break;
             
         case LOAD_24V_READING:
@@ -177,7 +179,7 @@ void SpiSlave::executeIncomingCommand(uint8_t *current_state) {
             stringBuffer->loadWithOutgoingData(battery->getBattery12VReading());
             break;
 		
-		case LOAD_ENERGY_CONSUMED:
+        case LOAD_ENERGY_CONSUMED:
             stringBuffer->loadWithOutgoingData(battery->getEnergyConsumed());
             break;
 			
@@ -192,20 +194,5 @@ void SpiSlave::executeReceivedString(uint8_t *current_state) {
     switch(purposeForIncomingString) {
 		// INPUT SWITCH CASES FOR RECIEVING STRING
     }    
-}
-
-
-uint8_t *SpiSlave::getShutdownError(void) {
-    uint8_t error;
-    
-    if (actuator->unsafeOrientation) {
-        error = UNSAFE_ORIENTATION_SHUTDOWN;
-    }
-    
-    else {
-        error = ALL_OK;
-    }
-    
-    return &error;
 }
 

@@ -2,12 +2,12 @@
 #define BATTERY_H
 
 #include <stdint.h>
-#include "central_states"
+#include "central_states.h"
 
 // Battery related pin map
-#define CURRENT_SENSE					0 	   // D14/A0
-#define BATTERY_READ_1					2	   // D16/A2
-#define BATTERY_READ_2					1	   // D15/A1
+#define CURRENT_SENSE					14 	   // D14/A0
+#define BATTERY_READ_1					16	   // D16/A2
+#define BATTERY_READ_2					15	   // D15/A1
 
 class Battery {
     private:
@@ -20,6 +20,7 @@ class Battery {
     public:
         Battery(void);
         void update(uint8_t *current_state);
+        void init(void);
 		double *getBattery24VReading(void);
 		double *getBattery12VReading(void);
 		double *getEnergyConsumed(void);

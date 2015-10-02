@@ -2,23 +2,24 @@
 #define TIMERS_H
 
 #include <stdint.h>
-#include "timer.h"
-#include "central_states"
+#include <Arduino.h>
+#include "central_states.h"
+
 
 // Timings
-#define SHUTDOWN_LENGTH					30000	// (ms)
-#define SPI_WATCHDOG_LENGTH				5000	// (ms)
+#define SHUTDOWN_DELAY					3000	// (ms)
+#define SPI_WATCHDOG_LENGTH				3000	// (ms)
 
 class Timers {
     private:
-		unsigned long shutdown_timer;
-		unsigned long spi_watchdog_timer;
-		bool shutdown_timer_latch;
-		bool spi_polled;
+	unsigned long shutdown_timer;
+	unsigned long spi_watchdog_timer;
+	bool shutdown_timer_latch;
         
     public:
         Timers(void);
         void update(uint8_t *current_state);
+        bool spi_polled;
 		
 };
 
