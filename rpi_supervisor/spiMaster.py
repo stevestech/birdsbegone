@@ -47,12 +47,6 @@ class SPI:
                'MASTER_ECHO_FAILED': chr(255) }
     
     # Slave select pins
-    ssPins = { 'POWER_CONTROL': 24,
-               'FRONT_LEFT': 23,
-               'FRONT_RIGHT': 25,
-               'BACK_RIGHT': 7,
-               'BACK_LEFT': 8 }
-			   
     ssPins = { 'FRONT_LEFT': 5,             # 1
                'FRONT_RIGHT': 6,            # 2
                'BACK_RIGHT': 13,            # 3
