@@ -27,12 +27,12 @@ void Battery::update(uint8_t *current_state) {
         break;
 
     case STATE_RUNNING:
-		read_transducer = true;
+		read_batteries = true;
 		read_transducer = true;
         break;
 
     case STATE_SHUTTING_DOWN:
-        read_batteries = false;
+		read_batteries = false;
 		read_transducer = false;
         break;
 	
