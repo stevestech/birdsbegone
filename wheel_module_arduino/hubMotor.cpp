@@ -33,15 +33,19 @@ HubMotor::HubMotor(bool *emergencyStop) {
 }
 
 
-void HubMotor::update(void) {
+void HubMotor::update(void) { 
     if (*emergencyStop) {
         state = STATE_NEUTRAL;
         throttle = 0;
     }
+    
+    digitalWrite(8, LOW);
   
     switch(state) {
     default:
     case STATE_NEUTRAL:
+        digitalWrite(8, HIGH);
+    
         analogWrite(PIN_HM_THROTTLE, 0);
         digitalWrite(PIN_HM_BRAKE, HIGH);
         digitalWrite(PIN_HM_REVERSE, HIGH);
