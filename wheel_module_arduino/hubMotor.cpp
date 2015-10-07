@@ -38,14 +38,10 @@ void HubMotor::update(void) {
         state = STATE_NEUTRAL;
         throttle = 0;
     }
-    
-    digitalWrite(8, LOW);
   
     switch(state) {
     default:
     case STATE_NEUTRAL:
-        digitalWrite(8, HIGH);
-    
         analogWrite(PIN_HM_THROTTLE, 0);
         digitalWrite(PIN_HM_BRAKE, HIGH);
         digitalWrite(PIN_HM_REVERSE, HIGH);

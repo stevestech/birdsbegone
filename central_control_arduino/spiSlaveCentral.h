@@ -139,6 +139,7 @@
 #define RECEIVE_SHUTDOWN_CMD			0
 #define RECEIVE_RUNNING_CMD			1
 #define RECEIVE_EMERGENCY_STOP_CMD              2
+#define RECEIVE_POWER_DOWN_CMD                  3
 
 #define LOAD_SHUTDOWN_STATUS		    100
 #define LOAD_24V_READING		        101

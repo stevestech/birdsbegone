@@ -82,6 +82,7 @@
 #include "actuator.h"
 #include "hubMotor.h"
 #include "buffer.h"
+#include "timers.h"
 
 // The largest expected data string must fit inside this buffer
 #define STRING_BUFFER_SIZE              32
@@ -153,6 +154,7 @@ class SpiSlave {
     
         Actuator *actuator;
         HubMotor *hubMotor;
+        Timers *timers;
         bool *emergencyStop;
         
         void reset(void);
@@ -160,7 +162,7 @@ class SpiSlave {
         void executeReceivedString(void);
         
     public:
-        SpiSlave(bool *emergencyStop, Actuator *actuator, HubMotor *hubMotor);
+        SpiSlave(bool *emergencyStop, Actuator *actuator, HubMotor *hubMotor, Timers *timers);
         ~SpiSlave();
         void update(void);
 };
