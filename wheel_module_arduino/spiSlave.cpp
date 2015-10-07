@@ -59,10 +59,21 @@ SpiSlave::SpiSlave(bool *emergencyStop, Actuator *actuator, HubMotor *hubMotor, 
     this->timers = timers;
     this->emergencyStop = emergencyStop;
     
+    // Initialise flags and variables
+    reset();
+}
+
+
+SpiSlave::~SpiSlave(void) {
+    delete stringBuffer;
+}
+
+
+void SpiSlave::init(void) {
     /*
      * Setup GPIO
      **/
-    pinMode(SS, INPUT_PULLUP);                    // D10
+    pinMode(SS, INPUT);                            // D10
     pinMode(MOSI, INPUT);                         // D11
     pinMode(MISO, OUTPUT);                        // D12
     pinMode(SCK, INPUT);                          // D13
@@ -80,16 +91,7 @@ SpiSlave::SpiSlave(bool *emergencyStop, Actuator *actuator, HubMotor *hubMotor, 
     
     // Enable SPI in slave mode
     bitSet(SPCR, SPE);
-    
-    
-    // Initialise flags and variables
-    reset();
-}
-
-
-SpiSlave::~SpiSlave(void) {
-    delete stringBuffer;
-}
+}  
 
 
 // Called at the start of a new operation, after SS falling edge.
@@ -106,7 +108,6 @@ void SpiSlave::reset(void) {
 
 void SpiSlave::update(void) {
     if (slaveSelectFallingEdge) {
-        timers->spi_polled = true;
         slaveSelectFallingEdge = false;
         reset();
     }
@@ -116,9 +117,7 @@ void SpiSlave::update(void) {
         uint8_t outgoingByte = EMPTY_BYTE;
         
         // The first byte received from the master after SS falling edge will be a command byte.
-        if ((!stringBuffer->isSending()) &&
-            (!stringBuffer->isReceiving())) {
-              
+        if (firstByte) {
             executeIncomingCommand();
         }
         
@@ -151,6 +150,9 @@ void SpiSlave::update(void) {
         SPDR = outgoingByte;
         incomingByteReady = false;
         firstByte = false;
+        timers->gotFirstSpiPacket = true;
+        actuator->gotFirstSpiPacket = true;
+        timers->spi_polled = true;        
     }
 }
 

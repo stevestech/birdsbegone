@@ -11,7 +11,9 @@ HubMotor::HubMotor(bool *emergencyStop) {
     state = STATE_NEUTRAL;
     throttle = 0;
     this->emergencyStop = emergencyStop;
-    
+}
+
+void HubMotor::init(void) {
     /*
      * Setup GPIO
      **/
@@ -30,7 +32,7 @@ HubMotor::HubMotor(bool *emergencyStop) {
     
     // Enable overflow interrupts for timer 1
     bitSet(TIMSK1, TOIE1);
-}
+}  
 
 
 void HubMotor::update(void) { 

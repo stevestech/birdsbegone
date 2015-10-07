@@ -17,7 +17,7 @@ Timers timers;
 SpiSlave spiSlave(&battery, &timers);
 
 void setup(void) {
-    Serial.begin(9600);
+    //Serial.begin(9600);
     relays.init();
     buttons.init();
     battery.init();
@@ -25,11 +25,11 @@ void setup(void) {
 }
 
 void loop(void) {
-        relays.update(&central_arduino_state);
-	buttons.update(&central_arduino_state);
-	battery.update(&central_arduino_state);
-	spiSlave.update(&central_arduino_state);
-        timers.update(&central_arduino_state);
+    relays.update(&central_arduino_state);
+    buttons.update(&central_arduino_state);
+    battery.update(&central_arduino_state);
+    spiSlave.update(&central_arduino_state);
+    timers.update(&central_arduino_state);
 }
 
 // sudo service supervisor.sh status.start.stop

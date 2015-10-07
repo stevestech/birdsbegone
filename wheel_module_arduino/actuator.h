@@ -65,8 +65,11 @@ class Actuator {
         void setMotor(void);
         
     public:
+        bool gotFirstSpiPacket;
+    
         Actuator(bool *emergencyStop);
         ~Actuator(void);
+        void init(void);
         void update(void);
         double *getMeasuredOrientation(void);
         double *getControllerOutput(void);

@@ -11,7 +11,6 @@
 
 class Timers {
     private:
-        bool gotFirstSpiPacket;
 	unsigned long spi_watchdog_timer;
         bool *emergencyStop;
         
@@ -19,6 +18,7 @@ class Timers {
         Timers(bool *emergencyStop);
         void update(void);
         bool spi_polled;
+        bool gotFirstSpiPacket;
 };
 
 #endif

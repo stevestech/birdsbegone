@@ -6,18 +6,12 @@ Timers::Timers(bool *emergencyStop) {
         gotFirstSpiPacket = false;
 	spi_watchdog_timer = millis();
 	spi_polled = false;
+        gotFirstSpiPacket = false;
         this->emergencyStop = emergencyStop;
 }
 
 void Timers::update(void) {
-	
 	/* ---------- SPI WATCHDOG TIMER ---------- */
-	
-        if (spi_polled && !gotFirstSpiPacket) {
-            gotFirstSpiPacket = true;
-        }
-          
-
 	if (gotFirstSpiPacket)
 	{
 		// Recording every SPI poll, resetting the watchdog timer

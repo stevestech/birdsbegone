@@ -15,6 +15,9 @@ SpiSlave spiSlave(&emergencyStop, &actuator, &hubMotor, &timers);
 
     
 void setup(void) {
+    actuator.init();
+    hubMotor.init();
+    spiSlave.init();
 }
 
 

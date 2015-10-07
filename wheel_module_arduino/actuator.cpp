@@ -5,13 +5,23 @@
 
 // Constructor
 Actuator::Actuator(bool *emergencyStop) {
-    uint8_t const maxControllerOutput = ACTUATOR_PWM_MAX - ACTUATOR_PWM_MIN;
-
     this->emergencyStop = emergencyStop;
-    
+    gotFirstSpiPacket = false;
+}
+
+
+// Destructor
+Actuator::~Actuator(void) {
+    delete controller;
+}
+
+
+void Actuator::init(void) {
     /*
      * Setup PID Controller
      **/
+    uint8_t const maxControllerOutput = ACTUATOR_PWM_MAX - ACTUATOR_PWM_MIN;
+     
     measuredOrientation = analogRead(PIN_A_POSITION_SENSE);
 
     // There will be no actuator control output until a new
@@ -54,16 +64,10 @@ Actuator::Actuator(bool *emergencyStop) {
     
     digitalWrite(PIN_A_ENABLE_CW, HIGH);
     digitalWrite(PIN_A_ENABLE_ACW, HIGH);
-}
-
-
-// Destructor
-Actuator::~Actuator(void) {
-    delete controller;
 }    
 
 
-void Actuator::update() {
+void Actuator::update(void) {
     // Get current wheel orientation from potentiometer
     measuredOrientation = analogRead(PIN_A_POSITION_SENSE);
     
@@ -74,11 +78,10 @@ void Actuator::update() {
         *emergencyStop = true;
     }
     
-    if (*emergencyStop) {
+    if (*emergencyStop || !gotFirstSpiPacket) {
         analogWrite(PIN_A_THROTTLE_CW, 0);
         analogWrite(PIN_A_THROTTLE_ACW, 0);
         
-        // Only a restart will be able to re-enable these
         digitalWrite(PIN_A_ENABLE_CW, LOW);
         digitalWrite(PIN_A_ENABLE_ACW, LOW);
     }
@@ -94,6 +97,9 @@ void Actuator::update() {
 
 
 void Actuator::setMotor(void) {
+    digitalWrite(PIN_A_ENABLE_CW, HIGH);
+    digitalWrite(PIN_A_ENABLE_ACW, HIGH);
+  
     // Move in clockwise direction
     if (controllerOutput >= 0) {
         analogWrite(PIN_A_THROTTLE_ACW, 0);

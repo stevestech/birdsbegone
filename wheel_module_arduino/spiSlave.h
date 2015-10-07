@@ -164,6 +164,7 @@ class SpiSlave {
     public:
         SpiSlave(bool *emergencyStop, Actuator *actuator, HubMotor *hubMotor, Timers *timers);
         ~SpiSlave();
+        void init(void);
         void update(void);
 };
     
