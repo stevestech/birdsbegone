@@ -58,7 +58,7 @@ class SPI:
     attemptsPerByte = 3
     
     # SPI delay between transfers (s)
-    delay = 0.010
+    delay = 0.001
 
     def __init__(self, state):
         self.state = state
